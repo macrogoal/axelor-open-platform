@@ -3,7 +3,7 @@ def versions = ext.libsVersions = [:]
 
 // versions
 versions.guice = "7.0.0"
-versions.guava = "33.4.8-jre"
+versions.guava = "33.5.0-jre"
 versions.hibernate = "6.6.29.Final"
 versions.hibernate_validator = "8.0.3.Final"
 versions.caffeine = "3.2.2"
@@ -12,7 +12,7 @@ versions.redisson = "3.51.0"
 versions.groovy = "4.0.28"
 versions.graal_js = "24.2.2"
 versions.resteasy = "6.2.12.Final"
-versions.jackson = "2.19.2"
+versions.jackson = "2.20.0"
 versions.shiro = "2.0.5"
 versions.buji_pac4j = "9.1.0"
 versions.jakartaee_pac4j = "8.0.1"
@@ -27,7 +27,7 @@ versions.tomcat = "10.1.46"
 
 versions.asm = "9.8"
 
-versions.flyway = "11.11.2"
+versions.flyway = "11.13.2"
 
 // unit testing
 libs.junit_jupiter = "org.junit.jupiter:junit-jupiter:${versions.junit5}"
@@ -53,7 +53,7 @@ libs.slf4j_logback = libs.slf4j_base + [
 libs.guava = "com.google.guava:guava:${versions.guava}"
 
 // yaml
-libs.snakeyaml = "org.yaml:snakeyaml:2.4"
+libs.snakeyaml = "org.yaml:snakeyaml:2.5"
 
 // Exclude guava and use explicit version : to fix CVE in transitive dependencies
 def excludeGuava = { name ->
@@ -238,7 +238,7 @@ libs.swagger_jaxrs2 = [
 libs.jackson_libs = [
   "com.fasterxml.jackson.core:jackson-core:${versions.jackson}",
   "com.fasterxml.jackson.core:jackson-databind:${versions.jackson}",
-  "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson}",
+  "com.fasterxml.jackson.core:jackson-annotations:2.20",
   "com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-json-provider:${versions.jackson}",
   excludeGuava("com.fasterxml.jackson.datatype:jackson-datatype-guava:${versions.jackson}"),
   "com.fasterxml.jackson.module:jackson-module-parameter-names:${versions.jackson}",

@@ -1,0 +1,1 @@
+## ./gradlew build -PfinalRelease=true -x test
