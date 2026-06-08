@@ -26,7 +26,8 @@ import {
   Property,
   Schema,
 } from "@/services/client/meta.types";
-import { toKebabCase } from "@/utils/names.ts";
+import { isChineseLocale } from "@/services/client/l10n";
+import { toKebabCase } from "@/utils/names";
 import { MetaScope, useViewTab } from "@/view-containers/views/scope";
 
 import { Layout as FormViewLayout, useGetErrors } from "../form";
@@ -175,9 +176,30 @@ function processEditor(schema: Schema) {
     return result as Schema;
   };
 
-  const items = editor.items?.map((item) =>
+  // 在中文环境下调整 firstName 和 lastName 的顺序
+  function reorderItemsForChineseLocale(items: Panel["items"]): Panel["items"] {
+    if (!isChineseLocale() || !items) return items;
+    
+    const firstNameIndex = items.findIndex(item => item.name === "firstName");
+    const lastNameIndex = items.findIndex(item => item.name === "lastName");
+    
+    // 如果同时找到了 firstName 和 lastName，并且 firstName 在 lastName 前面，则交换它们
+    if (firstNameIndex !== -1 && lastNameIndex !== -1 && firstNameIndex < lastNameIndex) {
+      const newItems = [...items];
+      const temp = newItems[firstNameIndex];
+      newItems[firstNameIndex] = newItems[lastNameIndex];
+      newItems[lastNameIndex] = temp;
+      return newItems;
+    }
+    
+    return items;
+  }
+
+  const processedItems = editor.items?.map((item) =>
     applyAttrs({ ...item }),
   ) as Panel["items"];
+
+  const items = reorderItemsForChineseLocale(processedItems);
 
   const hasColSpan = editor.layout !== "table";
 

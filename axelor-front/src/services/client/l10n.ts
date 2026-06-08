@@ -113,6 +113,32 @@ export const moment = dayjs;
 
 export type Moment = Dayjs;
 
+// 判断是否为中文环境
+export function isChineseLocale(): boolean {
+  const currentLocale = locale;
+  return (
+    currentLocale?.startsWith("zh") ||
+    currentLocale?.startsWith("cn") ||
+    currentLocale?.includes("zh")
+  );
+}
+
+// 格式化姓名：在中文环境下是 lastName + firstName，其他环境是 firstName + lastName
+export function formatName(
+  firstName?: string | null,
+  lastName?: string | null,
+): string {
+  const parts: string[] = [];
+  if (isChineseLocale()) {
+    if (lastName) parts.push(lastName);
+    if (firstName) parts.push(firstName);
+  } else {
+    if (firstName) parts.push(firstName);
+    if (lastName) parts.push(lastName);
+  }
+  return parts.join("");
+}
+
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace l10n {
   export function getLocale() {

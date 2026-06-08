@@ -1,444 +1,444 @@
 "key","message","comment","context"
-"+{0} more","+{0} 更多",,
-"API Documentation","API文档",,
-"About","关于",,
-"Access Error","访问错误",,
-"Action","操作",,
-"Action Category","操作类别",,
-"Action Sub-Category","操作子类别",,
-"Action...","操作...",,
-"Active Users","活跃用户",,
-"Add","添加",,
-"Add Field","添加字段",,
-"Add and new","添加并新建",,
-"Add filter","添加筛选器",,
-"Add followers","添加关注者",,
-"Add recipients to post your message.","添加收件人以发布您的消息。",,
-"Add some tags","添加一些标签",,
-"Add subitem","添加子项",,
-"Add to favorites...","添加到收藏夹...",,
-"Advanced Search","高级搜索",,
-"Align left","左对齐",,
-"Align right","右对齐",,
-"All","全部",,
-"All Day","全天",,
-"All Rights Reserved","版权所有",,
-"Alt.Key","Alt",,
-"An error has occurred{0}. Please contact your administrator.","发生错误{0}。请联系您的管理员。",,
-"Apply","应用",,
-"Apply as default for all users","为所有用户默认应用",,
-"Archive","归档",,
-"Are you sure to unfollow this document?","您确定要取消关注此文档吗？",,
-"Are you sure you want to delete the {0} selected documents?","您确定要删除选定的{0}个文档吗？",,
-"Are you sure you want to delete {0}?","您确定要删除{0}吗？",,
-"Are you sure you want to reset this view customization?","您确定要重置此视图自定义设置吗？",,
-"Attached to...","附加到...",,
-"Attachment","附件",,
-"Attachments","附件",,
-"Attributes","属性",,
-"Authenticator app","身份验证器应用",,
-"Authenticator code","身份验证器代码",,
-"Avg","平均",,
-"Back","返回",,
-"Back to editor","返回编辑器",,
-"Background color","背景色",,
-"Blockquote","引用",,
-"Bold (Ctrl+B)","粗体 (Ctrl+B)",,
-"Call","呼叫",,
-"Cancel","取消",,
-"Cancelled","已取消",,
-"Center","居中",,
-"Change password","更改密码",,
-"Change your password","更改您的密码",,
-"Clear","清除",,
-"Close","关闭",,
-"Close All","关闭所有",,
-"Close Others","关闭其他",,
-"Code","代码",,
-"Collapse All","全部折叠",,
-"Columns","列",,
-"Comments","评论",,
-"Confirm new password","确认新密码",,
-"Copied","已复制",,
-"Copy to clipboard","复制到剪贴板",,
-"Count","计数",,
-"Create","创建",,
-"Create document","创建文档",,
-"Create folder","创建文件夹",,
-"Create spreadsheet","创建电子表格",,
-"Create...","创建...",,
-"Created","已创建",,
-"Created By","创建者",,
-"Created On","创建时间",,
-"Ctrl.Key","Ctrl",,
-"Current changes will be lost. Do you really want to proceed?","当前更改将丢失。您真的要继续吗？",,
-"Current changes will be saved. Do you want to proceed?","当前更改将被保存。您要继续吗？",,
-"Current password","当前密码",,
-"Custom ({0})","自定义 ({0})",,
-"Customize...","自定义...",,
-"DMS.Home","首页",,
-"Day","天",,
-"Days","天",,
-"Delete","删除",,
-"Delete...","删除...",,
-"Delete.Key","删除",,
-"Details...","详情...",,
-"Directory","目录",,
-"Display process","显示进程",,
-"Do you really want to archive the selected record(s)?","您真的要归档选定的记录吗？",,
-"Do you really want to archive the selected record?","您真的要归档选定的记录吗？",,
-"Do you really want to delete the selected record(s)?","您真的要删除选定的记录吗？",,
-"Do you really want to delete the selected record?","您真的要删除选定的记录吗？",,
-"Do you really want to delete the selected task?","您真的要删除选定的任务吗？",,
-"Do you really want to unarchive the selected record(s)?","您真的要取消归档选定的记录吗？",,
-"Do you really want to unarchive the selected record?","您真的要取消归档选定的记录吗？",,
-"Do you really want to update all {0} record(s)?","您真的要更新所有{0}条记录吗？",,
-"Document","文档",,
-"Documentation","文档",,
-"Domain","域",,
-"Download","下载",,
-"Downloading file…","正在下载文件…",,
-"Downloading {0}…","正在下载 {0}…",,
-"Drop here","拖拽到此处",,
-"Drop your files to start upload.","拖拽文件以开始上传。",,
-"Duplicate","复制",,
-"Edit","编辑",,
-"Either select or create a record.","选择或创建一条记录。",,
-"Email","电子邮件",,
-"Email address","电子邮件地址",,
-"Email code","电子邮件代码",,
-"Email verification","电子邮件验证",,
-"Enter one of your recovery codes.","输入您的一个恢复代码。",,
-"Enter the code from verification email.","输入通过电子邮件发送的验证码。",,
-"Enter the code from your authentication app.","输入您的身份验证应用程序的代码。",,
-"Enum type","枚举类型",,
-"Environment","环境",,
-"Error","错误",,
-"Error code :","错误代码：",,
-"Expand All","全部展开",,
-"Export","导出",,
-"Export attached to current object. Would you like to download?","导出附加到当前对象。您要下载吗？",,
-"Export full","全部导出",,
-"Failed","失败",,
-"Failed to copy","复制失败",,
-"Failed to parse the given JSON theme : incorrect syntax was encountered.","解析给定的JSON主题失败：遇到不正确的语法。",,
-"False","假",,
-"Favorite","收藏",,
-"Field name","字段名称",,
-"Field type","字段类型",,
-"File","文件",,
-"File does not exist.","文件不存在。",,
-"File upload","文件上传",,
-"File {0} does not exist.","文件 {0} 不存在。",,
-"Filter","筛选器",,
-"Filters","筛选器",,
-"Filters ({0})","筛选器 ({0})",,
-"Fixed line","固定电话",,
-"Fixed line or mobile","固定电话或手机",,
-"Folder","文件夹",,
-"Followers","关注者",,
-"Font","字体",,
-"Font color","字体颜色",,
-"Font size","字体大小",,
-"Forgot password?","忘记密码？",,
-"Formatted","已格式化",,
-"Free Memory","可用内存",,
-"GB","GB",,
-"Go","开始",,
-"Go back to sign in page","返回登录页面",,
-"Grid requires at least one field.","列表必须包含至少一个字段。",,
-"Group by","分组依据",,
-"Grouped","已分组",,
-"Groups","组",,
-"Header 1","标题 1",,
-"Header 2","标题 2",,
-"Header 3","标题 3",,
-"Header 4","标题 4",,
-"Header 5","标题 5",,
-"Header 6","标题 6",,
-"Hide","隐藏",,
-"Hide legend","隐藏图例",,
-"Hide password","隐藏密码",,
-"Home page","首页",,
-"If an account exists with this email address, you will receive a password reset link.","如果此电子邮件地址存在账户，您将收到密码重置链接。",,
-"Indent","增加缩进",,
-"Information","信息",,
-"Insert image","插入图片",,
-"Insert link","插入链接",,
-"Insert.Key","插入",,
-"Internal Server Error","内部服务器错误",,
-"Invalid request","无效请求",,
-"Invalid use of ""{0}"" action, must be the last action.","不正确使用""{0}""操作，必须是最后一个操作。",,
-"Invalid verification code","验证码不正确",,
-"Italic (Ctrl+I)","斜体 (Ctrl+I)",,
-"Java Runtime","Java运行时",,
-"Java Version","Java版本",,
-"Justify","两端对齐",,
-"Keyboard Shortcuts","键盘快捷键",,
-"Language","语言",,
-"Large","大",,
-"Larger","较大",,
-"Last access time","最后访问时间",,
-"Last modified...","最后修改...",,
-"License","许可证",,
-"Load more","加载更多",,
-"Loading...","加载中...",,
-"Log in time","登录时间",,
-"Log out","登出",,
-"MB","MB",,
-"Maintenance","维护",,
-"Mark as important","标记为重要",,
-"Mark as not important","标记为不重要",,
-"Mark as read","标记为已读",,
-"Mark as unread","标记为未读",,
-"Mass Update","批量更新",,
-"Max","最大",,
-"Max Memory","最大内存",,
-"Medium","中等",,
-"Memory","内存",,
-"Messages","消息",,
-"Min","最小",,
-"Mobile","手机",,
-"Model...","模型...",,
-"Modified","已修改",,
-"Month","月",,
-"Months","月",,
-"More","更多",,
-"More details...","更多详情...",,
-"Move to archive","移至归档",,
-"Move to inbox","移至收件箱",,
-"My Filters","我的筛选器",,
-"Name","名称",,
-"New","新建",,
-"New Document","新建文档",,
-"New Folder","新建文件夹",,
-"New Spreadsheet","新建电子表格",,
-"New password","新密码",,
-"New password must be different.","新密码必须不同。",,
-"No","否",,
-"No filters available","无可用筛选器",,
-"No records found.","未找到记录。",,
-"No results found","未找到结果",,
-"None","无",,
-"Normal","正常",,
-"Normalize","标准化",,
-"Not available","不可用",,
-"Notifications","通知",,
-"Now","现在",,
-"OK","确定",,
-"Object","对象",,
-"Oops!","糟糕！",,
-"Open URL","打开URL",,
-"Operating System","操作系统",,
-"Ordered list","编号列表",,
-"Organize favorites...","整理收藏夹...",,
-"Orig. value","原始值",,
-"Other options","其他选项",,
-"Outdent","减少缩进",,
-"Owner","所有者",,
-"Page not found","页面未找到",,
-"Page size limited to {0} records","页面大小限制为{0}条记录",,
-"PageDown.Key","下一页",,
-"PageUp.Key","上一页",,
-"Pager","分页器",,
-"Parent","上级",,
-"Password","密码",,
-"Passwords do not match.","密码不匹配。",,
-"Pending","待处理",,
-"Permissions {0}","权限 {0}",,
-"Permissions...","权限...",,
-"Personal number","个人号码",,
-"Please check back later. Thank you for your patience.","请稍后再回来查看。谢谢您的耐心。",,
-"Please contact your administrator if the problem persists.","如果问题仍然存在，请联系您的管理员。",,
-"Please select at least one record.","请选择至少一条记录。",,
-"Please wait...","请稍等...",,
-"Post","发送",,
-"Preferences","偏好设置",,
-"Premium rate","高额费率",,
-"Quarter","季度",,
-"Quarters","季度",,
-"Question","问题",,
-"Recipients","收件人",,
-"Reconnecting…","重新连接中…",,
-"Recovery code","恢复代码",,
-"Reference","参考",,
-"Refresh","刷新",,
-"Refreshed at","刷新于",,
-"Reload","重新加载",,
-"Remove","移除",,
-"Remove color","移除颜色",,
-"Remove format","移除格式",,
-"Rename...","重命名...",,
-"Report attached to current object. Would you like to download?","报告已附加到当前对象。您想要下载吗？",,
-"Resend email","重新发送邮件",,
-"Resend email in ({0})s","在({0})秒内重新发送邮件",,
-"Reset","重置",,
-"Reset password","重置密码",,
-"Reset your password","重置您的密码",,
-"Retry","重试",,
-"Save","保存",,
-"Save as","另存为",,
-"Save column widths","保存列宽",,
-"Save filter as","将筛选器保存为",,
-"Search","搜索",,
-"Search Objects","搜索对象",,
-"Search in filters...","在筛选器中搜索...",,
-"Search menu...","搜索菜单...",,
-"Search more...","搜索更多...",,
-"Search...","搜索...",,
-"Select","选择",,
-"Selection",,,
-"Send","发送",,
-"Service disabled","服务已禁用",,
-"Share","分享",,
-"Shared cost","共享费用",,
-"Shortcuts","快捷方式",,
-"Show","显示",,
-"Show archived","显示已归档",,
-"Show help","显示帮助",,
-"Show json content","显示json内容",,
-"Show legend","显示图例",,
-"Show password","显示密码",,
-"Showing all items.","显示所有项目。",,
-"Showing {0} of {1} items.","显示第{0}项，共{1}项。",,
-"Sign in","登录",,
-"Site under maintenance","网站维护中",,
-"Small","小",,
-"Smaller","较小",,
-"Some files can't be downloaded. Please check them and retry.","某些文件无法下载。请检查后重试。",,
-"Sorry, something went wrong. Please try again later.","抱歉，出了些问题。请稍后再试。",,
-"Sort Ascending","升序排序",,
-"Sort Descending","降序排序",,
-"Spreadsheet","电子表格",,
-"Stacked","堆叠",,
-"Strikethrough (Ctrl+S)","删除线 (Ctrl+S)",,
-"Style","样式",,
-"Subject","主题",,
-"Sum","总和",,
-"System Information","系统信息",,
-"TB","TB",,
-"Tasks due","到期任务",,
-"Tasks todo","待办任务",,
-"Tenant",,,
-"The audit log related to update and creation isn't available for the record.","与更新和创建相关的审计日志对该记录不可用。",,
-"The record has been updated or deleted by another action.","该记录已被另一个操作更新或删除。",,
-"There are no records to update.","没有要更新的记录。",,
-"This page is automatically reloaded every 30 seconds.","此页面每30秒自动重新加载一次。",,
-"Title","标题",,
-"Today","今天",,
-"Toggle","切换",,
-"Toll free","免费",,
-"Tomorrow","明天",,
-"Total Memory","总内存",,
-"Translate","翻译",,
-"Translation","翻译",,
-"True","真",,
-"Try to refresh this page or contact your support service if the problem persists.","尝试刷新此页面或如果问题持续存在请联系您的支持服务。",,
-"Two-factor authentication","双重认证",,
-"Type","类型",,
-"UAN","UAN",,
-"Unarchive","取消归档",,
-"Underline (Ctrl+U)","下划线 (Ctrl+U)",,
-"Unexpected error occurred","发生意外错误",,
-"Ungroup","取消分组",,
-"Unknown","未知",,
-"Unordered list","无序列表",,
-"Update","更新",,
-"Update all","全部更新",,
-"Updated By","更新者",,
-"Updated On","更新时间",,
-"Upload","上传",,
-"Upload complete","上传完成",,
-"Uploading files...","正在上传文件...",,
-"Used Memory","已用内存",,
-"User","用户",,
-"Username","用户名",,
-"Validate","验证",,
-"Value","值",,
-"Verification code","验证码",,
-"Verification code sent successfully. Please check your emails.","验证码发送成功。请检查您的电子邮件。",,
-"Verify","验证",,
-"Version","版本",,
-"View","视图",,
-"View...","视图...",,
-"VoIP","网络电话",,
-"Voicemail","语音信箱",,
-"Warning","警告",,
-"Week","周",,
-"Weeks","周",,
-"Would you like to reload the current record?","您想重新加载当前记录吗？",,
-"Would you like to reload the record?","您想重新加载记录吗？",,
-"Would you like to remove the filter?","您想移除筛选器吗？",,
-"Write an email","写邮件",,
-"Write your comment here","在此处写下您的评论",,
-"Wrong current username or password","当前用户名或密码错误",,
-"Wrong username or password","用户名或密码错误",,
-"Year","年",,
-"Years","年",,
-"Yes","是",,
-"Yesterday","昨天",,
-"You are not allowed to upload a file bigger than {0} MB.","您不能上传大于{0}MB的文件。",,
-"You are not authorized to access this resource.","您无权访问此资源。",,
-"Your password has been successfully changed.","您的密码已成功更改。",,
-"Your password reset token is invalid or expired.","您的密码重置令牌无效或已过期。",,
-"[Last] dddd","[上个] dddd",,
-"and","和",,
-"bytes","字节",,
-"close the current view tab","关闭当前视图标签",,
-"contains","包含",,
-"create new record","创建新记录",,
-"delete current/selected record(s)","删除当前/所选记录",,
-"doesn't contain","不包含",,
-"duplicate current record","复制当前记录",,
-"edit selected record","编辑所选记录",,
-"equals","等于",,
-"focus first or selected item in view","聚焦视图中的第一个或所选项",,
-"focus left menu search box","聚焦左侧菜单搜索框",,
-"greater or equal","大于或等于",,
-"greater than","大于",,
-"in","在",,
-"in range","在范围内",,
-"in the current","在当前",,
-"in the next","在下一个",,
-"in the past","在过去",,
-"is current group","是当前组",,
-"is current user","是当前用户",,
-"is empty","为空",,
-"is false","为假",,
-"is not empty","非空",,
-"is not null","非null",,
-"is null","为null",,
-"is true","为真",,
-"items","项目",,
-"kB","kB",,
-"less or equal","小于或等于",,
-"less than","小于",,
-"load more","加载更多",,
-"navigate to next page/record","导航到下一页/记录",,
-"navigate to previous page/record","导航到上一页/记录",,
-"no messages","无消息",,
-"no tasks","无任务",,
-"not equal","不等于",,
-"not in","不在",,
-"not in range","不在范围内",,
-"or","或",,
-"or sign in with","或使用以下方式登录",,
-"refresh current view","刷新当前视图",,
-"replies ({0} of {1})","回复（{1}中的{0}）",,
-"save current record","保存当前记录",,
-"search for records","搜索记录",,
-"toggle left menu","切换左侧菜单",,
-"{0} is editing since {1}","{0}从{1}开始编辑",,
-"{0} is invalid","{0}无效",,
-"{0} is not in proper format","{0}格式不正确",,
-"{0} is required","{0}为必填项",,
-"{0} is too big","{0}太大",,
-"{0} is too small","{0}太小",,
-"{0} joined {1}","{0}加入了{1}",,
-"{0} left {1}","{0}离开了{1}",,
-"{0} messages","{0}条消息",,
-"{0} of {1}","{1}中的{0}",,
-"{0} records exported.","导出{0}条记录。",,
-"{0} saved {1}","{0}保存了{1}",,
-"{0} tasks","{0}个任务",,
-"{0} to {1} of {2}","第{0}-{1}项，共{2}项",,
+"+{0} more","+{0} 更多","",""
+"API Documentation","API文档","",""
+"About","关于","",""
+"Access Error","访问错误","",""
+"Action","操作","",""
+"Action Category","操作类别","",""
+"Action Sub-Category","操作子类别","",""
+"Action...","操作...","",""
+"Active Users","活跃用户","",""
+"Add","添加","",""
+"Add Field","添加字段","",""
+"Add and new","添加并新建","",""
+"Add filter","添加筛选器","",""
+"Add followers","添加关注者","",""
+"Add recipients to post your message.","添加收件人以发布您的消息。","",""
+"Add some tags","添加一些标签","",""
+"Add subitem","添加子项","",""
+"Add to favorites...","添加到收藏夹...","",""
+"Advanced Search","高级搜索","",""
+"Align left","左对齐","",""
+"Align right","右对齐","",""
+"All","全部","",""
+"All Day","全天","",""
+"All Rights Reserved","版权所有","",""
+"Alt.Key","Alt","",""
+"An error has occurred{0}. Please contact your administrator.","发生错误{0}。请联系您的管理员。","",""
+"Apply","应用","",""
+"Apply as default for all users","为所有用户默认应用","",""
+"Archive","归档","",""
+"Are you sure to unfollow this document?","您确定要取消关注此文档吗？","",""
+"Are you sure you want to delete the {0} selected documents?","您确定要删除选定的{0}个文档吗？","",""
+"Are you sure you want to delete {0}?","您确定要删除{0}吗？","",""
+"Are you sure you want to reset this view customization?","您确定要重置此视图自定义设置吗？","",""
+"Attached to...","附加到...","",""
+"Attachment","附件","",""
+"Attachments","附件","",""
+"Attributes","属性","",""
+"Authenticator app","身份验证器应用","",""
+"Authenticator code","身份验证器代码","",""
+"Avg","平均","",""
+"Back","返回","",""
+"Back to editor","返回编辑器","",""
+"Background color","背景色","",""
+"Blockquote","引用","",""
+"Bold (Ctrl+B)","粗体 (Ctrl+B)","",""
+"Call","呼叫","",""
+"Cancel","取消","",""
+"Cancelled","已取消","",""
+"Center","居中","",""
+"Change password","更改密码","",""
+"Change your password","更改您的密码","",""
+"Clear","清除","",""
+"Close","关闭","",""
+"Close All","关闭所有","",""
+"Close Others","关闭其他","",""
+"Code","代码","",""
+"Collapse All","全部折叠","",""
+"Columns","列","",""
+"Comments","评论","",""
+"Confirm new password","确认新密码","",""
+"Copied","已复制","",""
+"Copy to clipboard","复制到剪贴板","",""
+"Count","计数","",""
+"Create","创建","",""
+"Create document","创建文档","",""
+"Create folder","创建文件夹","",""
+"Create spreadsheet","创建电子表格","",""
+"Create...","创建...","",""
+"Created","已创建","",""
+"Created By","创建者","",""
+"Created On","创建时间","",""
+"Ctrl.Key","Ctrl","",""
+"Current changes will be lost. Do you really want to proceed?","当前更改将丢失。您真的要继续吗？","",""
+"Current changes will be saved. Do you want to proceed?","当前更改将被保存。您要继续吗？","",""
+"Current password","当前密码","",""
+"Custom ({0})","自定义 ({0})","",""
+"Customize...","自定义...","",""
+"DMS.Home","首页","",""
+"Day","天","",""
+"Days","天","",""
+"Delete","删除","",""
+"Delete...","删除...","",""
+"Delete.Key","删除","",""
+"Details...","详情...","",""
+"Directory","目录","",""
+"Display process","显示进程","",""
+"Do you really want to archive the selected record(s)?","您真的要归档选定的记录吗？","",""
+"Do you really want to archive the selected record?","您真的要归档选定的记录吗？","",""
+"Do you really want to delete the selected record(s)?","您真的要删除选定的记录吗？","",""
+"Do you really want to delete the selected record?","您真的要删除选定的记录吗？","",""
+"Do you really want to delete the selected task?","您真的要删除选定的任务吗？","",""
+"Do you really want to unarchive the selected record(s)?","您真的要取消归档选定的记录吗？","",""
+"Do you really want to unarchive the selected record?","您真的要取消归档选定的记录吗？","",""
+"Do you really want to update all {0} record(s)?","您真的要更新所有{0}条记录吗？","",""
+"Document","文档","",""
+"Documentation","文档","",""
+"Domain","域","",""
+"Download","下载","",""
+"Downloading file…","正在下载文件…","",""
+"Downloading {0}…","正在下载 {0}…","",""
+"Drop here","拖拽到此处","",""
+"Drop your files to start upload.","拖拽文件以开始上传。","",""
+"Duplicate","复制","",""
+"Edit","编辑","",""
+"Either select or create a record.","选择或创建一条记录。","",""
+"Email","电子邮件","",""
+"Email address","电子邮件地址","",""
+"Email code","电子邮件代码","",""
+"Email verification","电子邮件验证","",""
+"Enter one of your recovery codes.","输入您的一个恢复代码。","",""
+"Enter the code from verification email.","输入通过电子邮件发送的验证码。","",""
+"Enter the code from your authentication app.","输入您的身份验证应用程序的代码。","",""
+"Enum type","枚举类型","",""
+"Environment","环境","",""
+"Error","错误","",""
+"Error code :","错误代码：","",""
+"Expand All","全部展开","",""
+"Export","导出","",""
+"Export attached to current object. Would you like to download?","导出附加到当前对象。您要下载吗？","",""
+"Export full","全部导出","",""
+"Failed","失败","",""
+"Failed to copy","复制失败","",""
+"Failed to parse the given JSON theme : incorrect syntax was encountered.","解析给定的JSON主题失败：遇到不正确的语法。","",""
+"False","假","",""
+"Favorite","收藏","",""
+"Field name","字段名称","",""
+"Field type","字段类型","",""
+"File","文件","",""
+"File does not exist.","文件不存在。","",""
+"File upload","文件上传","",""
+"File {0} does not exist.","文件 {0} 不存在。","",""
+"Filter","筛选器","",""
+"Filters","筛选器","",""
+"Filters ({0})","筛选器 ({0})","",""
+"Fixed line","固定电话","",""
+"Fixed line or mobile","固定电话或手机","",""
+"Folder","文件夹","",""
+"Followers","关注者","",""
+"Font","字体","",""
+"Font color","字体颜色","",""
+"Font size","字体大小","",""
+"Forgot password?","忘记密码？","",""
+"Formatted","已格式化","",""
+"Free Memory","可用内存","",""
+"GB","GB","",""
+"Go","开始","",""
+"Go back to sign in page","返回登录页面","",""
+"Grid requires at least one field.","列表必须包含至少一个字段。","",""
+"Group by","分组依据","",""
+"Grouped","已分组","",""
+"Groups","组","",""
+"Header 1","标题 1","",""
+"Header 2","标题 2","",""
+"Header 3","标题 3","",""
+"Header 4","标题 4","",""
+"Header 5","标题 5","",""
+"Header 6","标题 6","",""
+"Hide","隐藏","",""
+"Hide legend","隐藏图例","",""
+"Hide password","隐藏密码","",""
+"Home page","首页","",""
+"If an account exists with this email address, you will receive a password reset link.","如果此电子邮件地址存在账户，您将收到密码重置链接。","",""
+"Indent","增加缩进","",""
+"Information","信息","",""
+"Insert image","插入图片","",""
+"Insert link","插入链接","",""
+"Insert.Key","插入","",""
+"Internal Server Error","内部服务器错误","",""
+"Invalid request","无效请求","",""
+"Invalid use of ""{0}"" action, must be the last action.","不正确使用""{0}""操作，必须是最后一个操作。","",""
+"Invalid verification code","验证码不正确","",""
+"Italic (Ctrl+I)","斜体 (Ctrl+I)","",""
+"Java Runtime","Java运行时","",""
+"Java Version","Java版本","",""
+"Justify","两端对齐","",""
+"Keyboard Shortcuts","键盘快捷键","",""
+"Language","语言","",""
+"Large","大","",""
+"Larger","较大","",""
+"Last access time","最后访问时间","",""
+"Last modified...","最后修改...","",""
+"License","许可证","",""
+"Load more","加载更多","",""
+"Loading...","加载中...","",""
+"Log in time","登录时间","",""
+"Log out","登出","",""
+"MB","MB","",""
+"Maintenance","维护","",""
+"Mark as important","标记为重要","",""
+"Mark as not important","标记为不重要","",""
+"Mark as read","标记为已读","",""
+"Mark as unread","标记为未读","",""
+"Mass Update","批量更新","",""
+"Max","最大","",""
+"Max Memory","最大内存","",""
+"Medium","中等","",""
+"Memory","内存","",""
+"Messages","消息","",""
+"Min","最小","",""
+"Mobile","手机","",""
+"Model...","模型...","",""
+"Modified","已修改","",""
+"Month","月","",""
+"Months","月","",""
+"More","更多","",""
+"More details...","更多详情...","",""
+"Move to archive","移至归档","",""
+"Move to inbox","移至收件箱","",""
+"My Filters","我的筛选器","",""
+"Name","名称","",""
+"New","新建","",""
+"New Document","新建文档","",""
+"New Folder","新建文件夹","",""
+"New Spreadsheet","新建电子表格","",""
+"New password","新密码","",""
+"New password must be different.","新密码必须不同。","",""
+"No","否","",""
+"No filters available","无可用筛选器","",""
+"No records found.","未找到记录。","",""
+"No results found","未找到结果","",""
+"None","无","",""
+"Normal","正常","",""
+"Normalize","标准化","",""
+"Not available","不可用","",""
+"Notifications","通知","",""
+"Now","现在","",""
+"OK","确定","",""
+"Object","对象","",""
+"Oops!","糟糕！","",""
+"Open URL","打开URL","",""
+"Operating System","操作系统","",""
+"Ordered list","编号列表","",""
+"Organize favorites...","整理收藏夹...","",""
+"Orig. value","原始值","",""
+"Other options","其他选项","",""
+"Outdent","减少缩进","",""
+"Owner","所有者","",""
+"Page not found","页面未找到","",""
+"Page size limited to {0} records","页面大小限制为{0}条记录","",""
+"PageDown.Key","下一页","",""
+"PageUp.Key","上一页","",""
+"Pager","分页器","",""
+"Parent","上级","",""
+"Password","密码","",""
+"Passwords do not match.","密码不匹配。","",""
+"Pending","待处理","",""
+"Permissions {0}","权限 {0}","",""
+"Permissions...","权限...","",""
+"Personal number","个人号码","",""
+"Please check back later. Thank you for your patience.","请稍后再回来查看。谢谢您的耐心。","",""
+"Please contact your administrator if the problem persists.","如果问题仍然存在，请联系您的管理员。","",""
+"Please select at least one record.","请选择至少一条记录。","",""
+"Please wait...","请稍等...","",""
+"Post","发送","",""
+"Preferences","偏好设置","",""
+"Premium rate","高额费率","",""
+"Quarter","季度","",""
+"Quarters","季度","",""
+"Question","问题","",""
+"Recipients","收件人","",""
+"Reconnecting…","重新连接中…","",""
+"Recovery code","恢复代码","",""
+"Reference","参考","",""
+"Refresh","刷新","",""
+"Refreshed at","刷新于","",""
+"Reload","重新加载","",""
+"Remove","移除","",""
+"Remove color","移除颜色","",""
+"Remove format","移除格式","",""
+"Rename...","重命名...","",""
+"Report attached to current object. Would you like to download?","报告已附加到当前对象。您想要下载吗？","",""
+"Resend email","重新发送邮件","",""
+"Resend email in ({0})s","在({0})秒内重新发送邮件","",""
+"Reset","重置","",""
+"Reset password","重置密码","",""
+"Reset your password","重置您的密码","",""
+"Retry","重试","",""
+"Save","保存","",""
+"Save as","另存为","",""
+"Save column widths","保存列宽","",""
+"Save filter as","将筛选器保存为","",""
+"Search","搜索","",""
+"Search Objects","搜索对象","",""
+"Search in filters...","在筛选器中搜索...","",""
+"Search menu...","搜索菜单...","",""
+"Search more...","搜索更多...","",""
+"Search...","搜索...","",""
+"Select","选择","",""
+"Selection","","",""
+"Send","发送","",""
+"Service disabled","服务已禁用","",""
+"Share","分享","",""
+"Shared cost","共享费用","",""
+"Shortcuts","快捷方式","",""
+"Show","显示","",""
+"Show archived","显示已归档","",""
+"Show help","显示帮助","",""
+"Show json content","显示json内容","",""
+"Show legend","显示图例","",""
+"Show password","显示密码","",""
+"Showing all items.","显示所有项目。","",""
+"Showing {0} of {1} items.","显示第{0}项，共{1}项。","",""
+"Sign in","登录","",""
+"Site under maintenance","网站维护中","",""
+"Small","小","",""
+"Smaller","较小","",""
+"Some files can't be downloaded. Please check them and retry.","某些文件无法下载。请检查后重试。","",""
+"Sorry, something went wrong. Please try again later.","抱歉，出了些问题。请稍后再试。","",""
+"Sort Ascending","升序排序","",""
+"Sort Descending","降序排序","",""
+"Spreadsheet","电子表格","",""
+"Stacked","堆叠","",""
+"Strikethrough (Ctrl+S)","删除线 (Ctrl+S)","",""
+"Style","样式","",""
+"Subject","主题","",""
+"Sum","总和","",""
+"System Information","系统信息","",""
+"TB","TB","",""
+"Tasks due","到期任务","",""
+"Tasks todo","待办任务","",""
+"Tenant","","",""
+"The audit log related to update and creation isn't available for the record.","与更新和创建相关的审计日志对该记录不可用。","",""
+"The record has been updated or deleted by another action.","该记录已被另一个操作更新或删除。","",""
+"There are no records to update.","没有要更新的记录。","",""
+"This page is automatically reloaded every 30 seconds.","此页面每30秒自动重新加载一次。","",""
+"Title","标题","",""
+"Today","今天","",""
+"Toggle","切换","",""
+"Toll free","免费","",""
+"Tomorrow","明天","",""
+"Total Memory","总内存","",""
+"Translate","翻译","",""
+"Translation","翻译","",""
+"True","真","",""
+"Try to refresh this page or contact your support service if the problem persists.","尝试刷新此页面或如果问题持续存在请联系您的支持服务。","",""
+"Two-factor authentication","双重认证","",""
+"Type","类型","",""
+"UAN","UAN","",""
+"Unarchive","取消归档","",""
+"Underline (Ctrl+U)","下划线 (Ctrl+U)","",""
+"Unexpected error occurred","发生意外错误","",""
+"Ungroup","取消分组","",""
+"Unknown","未知","",""
+"Unordered list","无序列表","",""
+"Update","更新","",""
+"Update all","全部更新","",""
+"Updated By","更新者","",""
+"Updated On","更新时间","",""
+"Upload","上传","",""
+"Upload complete","上传完成","",""
+"Uploading files...","正在上传文件...","",""
+"Used Memory","已用内存","",""
+"User","用户","",""
+"Username","用户名","",""
+"Validate","验证","",""
+"Value","值","",""
+"Verification code","验证码","",""
+"Verification code sent successfully. Please check your emails.","验证码发送成功。请检查您的电子邮件。","",""
+"Verify","验证","",""
+"Version","版本","",""
+"View","视图","",""
+"View...","视图...","",""
+"VoIP","网络电话","",""
+"Voicemail","语音信箱","",""
+"Warning","警告","",""
+"Week","周","",""
+"Weeks","周","",""
+"Would you like to reload the current record?","您想重新加载当前记录吗？","",""
+"Would you like to reload the record?","您想重新加载记录吗？","",""
+"Would you like to remove the filter?","您想移除筛选器吗？","",""
+"Write an email","写邮件","",""
+"Write your comment here","在此处写下您的评论","",""
+"Wrong current username or password","当前用户名或密码错误","",""
+"Wrong username or password","用户名或密码错误","",""
+"Year","年","",""
+"Years","年","",""
+"Yes","是","",""
+"Yesterday","昨天","",""
+"You are not allowed to upload a file bigger than {0} MB.","您不能上传大于{0}MB的文件。","",""
+"You are not authorized to access this resource.","您无权访问此资源。","",""
+"Your password has been successfully changed.","您的密码已成功更改。","",""
+"Your password reset token is invalid or expired.","您的密码重置令牌无效或已过期。","",""
+"[Last] dddd","[上个] dddd","",""
+"and","和","",""
+"bytes","字节","",""
+"close the current view tab","关闭当前视图标签","",""
+"contains","包含","",""
+"create new record","创建新记录","",""
+"delete current/selected record(s)","删除当前/所选记录","",""
+"doesn't contain","不包含","",""
+"duplicate current record","复制当前记录","",""
+"edit selected record","编辑所选记录","",""
+"equals","等于","",""
+"focus first or selected item in view","聚焦视图中的第一个或所选项","",""
+"focus left menu search box","聚焦左侧菜单搜索框","",""
+"greater or equal","大于或等于","",""
+"greater than","大于","",""
+"in","在","",""
+"in range","在范围内","",""
+"in the current","在当前","",""
+"in the next","在下一个","",""
+"in the past","在过去","",""
+"is current group","是当前组","",""
+"is current user","是当前用户","",""
+"is empty","为空","",""
+"is false","为假","",""
+"is not empty","非空","",""
+"is not null","非null","",""
+"is null","为null","",""
+"is true","为真","",""
+"items","项目","",""
+"kB","kB","",""
+"less or equal","小于或等于","",""
+"less than","小于","",""
+"load more","加载更多","",""
+"navigate to next page/record","导航到下一页/记录","",""
+"navigate to previous page/record","导航到上一页/记录","",""
+"no messages","无消息","",""
+"no tasks","无任务","",""
+"not equal","不等于","",""
+"not in","不在","",""
+"not in range","不在范围内","",""
+"or","或","",""
+"or sign in with","或使用以下方式登录","",""
+"refresh current view","刷新当前视图","",""
+"replies ({0} of {1})","回复（{1}中的{0}）","",""
+"save current record","保存当前记录","",""
+"search for records","搜索记录","",""
+"toggle left menu","切换左侧菜单","",""
+"{0} is editing since {1}","{0}从{1}开始编辑","",""
+"{0} is invalid","{0}无效","",""
+"{0} is not in proper format","{0}格式不正确","",""
+"{0} is required","{0}为必填项","",""
+"{0} is too big","{0}太大","",""
+"{0} is too small","{0}太小","",""
+"{0} joined {1}","{0}加入了{1}","",""
+"{0} left {1}","{0}离开了{1}","",""
+"{0} messages","{0}条消息","",""
+"{0} of {1}","{1}中的{0}","",""
+"{0} records exported.","导出{0}条记录。","",""
+"{0} saved {1}","{0}保存了{1}","",""
+"{0} tasks","{0}个任务","",""
+"{0} to {1} of {2}","第{0}-{1}项，共{2}项","",""

@@ -1,4 +1,5 @@
 def repos = {
+  mavenLocal()
   mavenCentral() {
     content {
       excludeGroup 'com.axelor'

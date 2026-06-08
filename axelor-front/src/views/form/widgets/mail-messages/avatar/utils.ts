@@ -1,10 +1,16 @@
 import { request } from "@/services/client/client";
-import { l10n } from "@/services/client/l10n";
+import { l10n, formatName } from "@/services/client/l10n";
 import { session } from "@/services/client/session";
 import { MessageAuthor } from "../message/types";
 
 export function getName(user: MessageAuthor) {
   const nameField = session?.info?.user?.nameField || "name";
+  
+  // 如果有 firstName 和 lastName，根据语言环境合并它们
+  if (user && (user.firstName || user.lastName)) {
+    return formatName(user.firstName, user.lastName);
+  }
+  
   return user && user[nameField];
 }
 
