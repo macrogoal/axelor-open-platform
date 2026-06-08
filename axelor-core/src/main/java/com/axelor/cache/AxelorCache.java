@@ -6,6 +6,8 @@ package com.axelor.cache;
 
 import jakarta.annotation.Nullable;
 import java.io.Closeable;
+import java.time.Duration;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,7 +65,10 @@ public interface AxelorCache<K, V> extends Iterable<Map.Entry<K, V>>, Closeable 
    * @return an unmodifiable mapping of keys to values for the specified keys in this cache
    */
   default Map<K, V> getAll(Set<K> keys) {
-    return keys.stream().collect(Collectors.toUnmodifiableMap(Function.identity(), this::get));
+    return keys.stream()
+        .map(key -> new SimpleImmutableEntry<>(key, get(key)))
+        .filter(e -> e.getValue() != null)
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   /**
@@ -111,6 +116,9 @@ public interface AxelorCache<K, V> extends Iterable<Map.Entry<K, V>>, Closeable 
    * <p>Note that if the cache has a cache loader, it will be used. This differs from Caffeine's
    * Cache#asMap() and is designed to match Redisson RMap behavior.
    *
+   * <p>In case of tenant-aware cache, the returned map view is for current tenant: you must use
+   * this on demand for correct tenant resolution, not on static initialization.
+   *
    * @return a thread-safe view of this cache supporting {@link ConcurrentMap} operations
    */
   ConcurrentMap<K, V> asMap();
@@ -144,4 +152,32 @@ public interface AxelorCache<K, V> extends Iterable<Map.Entry<K, V>>, Closeable 
    * @return reentrant lock
    */
   Lock getLock(K key);
+
+  /**
+   * Sets a time to live.
+   *
+   * @param ttl time to live
+   * @return <code>true</code> if the time to live was set
+   */
+  default boolean expire(Duration ttl) {
+    return false;
+  }
+
+  /**
+   * Clears the time to live.
+   *
+   * @return <code>true</code> if the time to live was removed
+   */
+  default boolean clearExpire() {
+    return false;
+  }
+
+  /**
+   * Returns the remaining time to live in milliseconds.
+   *
+   * @return remaining time to live in milliseconds, or a negative value if there is no time to live
+   */
+  default long remainTimeToLive() {
+    return -1;
+  }
 }

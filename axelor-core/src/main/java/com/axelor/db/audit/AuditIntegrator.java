@@ -4,6 +4,7 @@
  */
 package com.axelor.db.audit;
 
+import com.axelor.db.json.JsonReferenceListener;
 import com.axelor.inject.Beans;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
@@ -28,6 +29,12 @@ public class AuditIntegrator implements Integrator {
     registry.appendListeners(EventType.PRE_INSERT, auditListener);
     registry.appendListeners(EventType.PRE_UPDATE, auditListener);
     registry.appendListeners(EventType.PRE_DELETE, auditListener);
+
+    final JsonReferenceListener jsonListener = new JsonReferenceListener();
+    registry.appendListeners(EventType.PRE_INSERT, jsonListener);
+    registry.appendListeners(EventType.PRE_UPDATE, jsonListener);
+    registry.appendListeners(EventType.PRE_DELETE, jsonListener);
+    registry.appendListeners(EventType.POST_COMMIT_UPDATE, jsonListener);
 
     Beans.get(HibernateListenerService.class).registerListeners(registry);
   }

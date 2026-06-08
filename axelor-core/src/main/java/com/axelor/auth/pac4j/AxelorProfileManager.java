@@ -4,13 +4,13 @@
  */
 package com.axelor.auth.pac4j;
 
+import com.axelor.auth.AuthSessionService;
 import com.axelor.auth.AuthUtils;
 import com.axelor.auth.MFAService;
-import com.axelor.auth.db.MFA;
+import com.axelor.auth.MFASummaryDTO;
 import com.axelor.auth.db.MFAMethod;
 import com.axelor.auth.db.User;
 import com.axelor.auth.db.repo.MFARepository;
-import com.axelor.auth.pac4j.local.AxelorFormClient;
 import com.axelor.common.ObjectUtils;
 import com.axelor.inject.Beans;
 import io.buji.pac4j.profile.ShiroProfileManager;
@@ -57,7 +57,7 @@ public class AxelorProfileManager extends ShiroProfileManager {
 
   private void removeSession() {
     try {
-      SecurityUtils.getSubject().logout();
+      Beans.get(AuthSessionService.class).terminateSession(SecurityUtils.getSubject());
     } catch (Exception e) {
       // ignore
     }
@@ -74,15 +74,13 @@ public class AxelorProfileManager extends ShiroProfileManager {
         sessionStore.get(context, FULLY_AUTHENTICATED).filter(Boolean.TRUE::equals).isPresent();
 
     if (isFullyAuthenticated) {
-      if (AxelorFormClient.class.getSimpleName().equals(clientName)) {
-        sessionStore
-            .get(context, PENDING_CLIENT_NAME)
-            .ifPresent(
-                pendingClientName -> {
-                  sessionStore.set(context, PENDING_CLIENT_NAME, null);
-                  profile.setClientName(pendingClientName.toString());
-                });
-      }
+      sessionStore
+          .get(context, PENDING_CLIENT_NAME)
+          .ifPresent(
+              pendingClientName -> {
+                sessionStore.set(context, PENDING_CLIENT_NAME, null);
+                profile.setClientName(pendingClientName.toString());
+              });
       return true;
     }
 
@@ -97,9 +95,8 @@ public class AxelorProfileManager extends ShiroProfileManager {
       return true;
     }
 
-    MFA mfa = Beans.get(MFARepository.class).findByOwner(user);
-
-    if (mfa == null || !Boolean.TRUE.equals(mfa.getEnabled())) {
+    MFASummaryDTO mfa = Beans.get(MFARepository.class).findSummaryByOwner(user);
+    if (mfa == null || !Boolean.TRUE.equals(mfa.enabled())) {
       return true;
     }
 

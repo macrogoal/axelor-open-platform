@@ -49,6 +49,9 @@ public class MetaFiles {
 
   private static final String UPLOAD_NAME_PATTERN_AUTO = "auto";
 
+  static final String MSG_FILE_NAME_NOT_ALLOWED = /*$$(*/ "File name is not allowed: {0}" /*)*/;
+  static final String MSG_FILE_TYPE_NOT_ALLOWED = /*$$(*/ "File type is not allowed: {0}" /*)*/;
+
   private static final Object lock = new Object();
 
   private static final List<Pattern> WHITELIST_PATTERNS =
@@ -113,7 +116,7 @@ public class MetaFiles {
    * blacklist pattern.
    *
    * @param filePath the file path to check
-   * @throws IllegalArgumentException if the file path to check is not valid
+   * @throws IllegalFileException if the file path to check is not valid
    */
   public static void checkPath(String filePath) {
     Objects.requireNonNull(filePath, "file path can't be null");
@@ -122,14 +125,14 @@ public class MetaFiles {
         !BLACKLIST_PATTERNS.isEmpty() && isMatchingFileNamePattern(BLACKLIST_PATTERNS, filePath);
 
     if (blocked) {
-      throw new IllegalArgumentException("File name is not allowed: " + filePath);
+      throw new IllegalFileException(MSG_FILE_NAME_NOT_ALLOWED, filePath);
     }
 
     boolean allowed =
         WHITELIST_PATTERNS.isEmpty() || isMatchingFileNamePattern(WHITELIST_PATTERNS, filePath);
 
     if (!allowed) {
-      throw new IllegalArgumentException("File name is not allowed: " + filePath);
+      throw new IllegalFileException(MSG_FILE_NAME_NOT_ALLOWED, filePath);
     }
   }
 
@@ -144,7 +147,7 @@ public class MetaFiles {
    * blacklist types.
    *
    * @param fileType the file type to check
-   * @throws IllegalArgumentException if the file type to check is not valid
+   * @throws IllegalFileException if the file type to check is not valid
    */
   public static void checkType(String fileType) {
     if (StringUtils.isBlank(fileType)) {
@@ -161,13 +164,13 @@ public class MetaFiles {
     boolean blocked = !BLACKLIST_TYPES.isEmpty() && isMatchingMimeType(BLACKLIST_TYPES, mimeType);
 
     if (blocked) {
-      throw new IllegalArgumentException("File type is not allowed: " + fileType);
+      throw new IllegalFileException(MSG_FILE_TYPE_NOT_ALLOWED, fileType);
     }
 
     boolean allowed = WHITELIST_TYPES.isEmpty() || isMatchingMimeType(WHITELIST_TYPES, mimeType);
 
     if (!allowed) {
-      throw new IllegalArgumentException("File type is not allowed: " + fileType);
+      throw new IllegalFileException(MSG_FILE_TYPE_NOT_ALLOWED, fileType);
     }
   }
 
@@ -181,12 +184,32 @@ public class MetaFiles {
    * <p>The file is valid if it matches file upload whitelist types and doesn't match upload
    * blacklist types.
    *
+   * <p>Detection is based solely on the file content (magic bytes), without any filename hint, to
+   * prevent spoofing via file extension.
+   *
    * @param file the file to check
-   * @throws IllegalArgumentException
+   * @throws IllegalFileException if the content type is not valid
    */
   public static void checkType(File file) {
     Objects.requireNonNull(file, "file can't be null");
-    checkType(MimeTypesUtils.getContentType(file));
+    checkType(MimeTypesUtils.getContentType(file, null));
+  }
+
+  /**
+   * Check whether the given input stream content is valid.
+   *
+   * <p>The content is valid if it matches file upload whitelist types and doesn't match upload
+   * blacklist types.
+   *
+   * <p>Detection is based solely on the stream content (magic bytes), without any filename hint, to
+   * prevent spoofing via file extension.
+   *
+   * @param stream the input stream to check
+   * @throws IllegalFileException if the content type is not valid
+   */
+  public static void checkType(InputStream stream) {
+    Objects.requireNonNull(stream, "stream can't be null");
+    checkType(MimeTypesUtils.getContentType(stream, null));
   }
 
   private String getTargetName(String fileName) {
@@ -261,6 +284,7 @@ public class MetaFiles {
    */
   public File upload(InputStream chunk, long startOffset, long fileSize, String fileId)
       throws IOException {
+    Objects.requireNonNull(chunk, "input stream can't be null");
     final Path tmp = TempFiles.findTempFile(fileId);
     if ((fileSize > -1 && startOffset > fileSize)
         || (Files.exists(tmp) && Files.size(tmp) != startOffset)
@@ -352,7 +376,9 @@ public class MetaFiles {
           // ignore, file may not completely uploaded
         }
         // restore original file
-        store.addFile(tmpCopy, originalFilePath);
+        if (tmpCopy != null) {
+          store.addFile(tmpCopy, originalFilePath);
+        }
         throw new PersistenceException(e);
       }
     } finally {

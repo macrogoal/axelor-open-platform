@@ -8,10 +8,11 @@ import static com.axelor.common.StringUtils.isBlank;
 
 import com.axelor.app.AppSettings;
 import com.axelor.app.AvailableAppSettings;
-import com.axelor.auth.AuditableRunner;
+import com.axelor.auth.AuthUtils;
 import com.axelor.auth.db.User;
 import com.axelor.auth.db.repo.UserRepository;
 import com.axelor.common.StringUtils;
+import com.axelor.concurrent.ContextAware;
 import com.axelor.db.JPA;
 import com.axelor.db.Model;
 import com.axelor.db.Query;
@@ -76,7 +77,6 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
@@ -475,22 +475,19 @@ public class MailServiceImpl implements MailService, MailConstants {
 
     // send email using a separate process to void thread blocking
     executor.submit(
-        () -> {
-          send(sender, email);
-          return true;
-        });
+        ContextAware.of()
+            .withTransaction(false)
+            .build(
+                () -> {
+                  send(sender, email);
+                  return true;
+                }));
   }
 
   @Transactional(rollbackOn = Exception.class)
   protected void send(final MailSender sender, final MimeMessage email) throws Exception {
-    final AuditableRunner runner = Beans.get(AuditableRunner.class);
-    final Callable<Boolean> job =
-        () -> {
-          sender.send(email);
-          messageSent(email);
-          return true;
-        };
-    runner.run(job);
+    sender.send(email);
+    messageSent(email);
   }
 
   /**
@@ -663,15 +660,18 @@ public class MailServiceImpl implements MailService, MailConstants {
       if (reader == null) {
         return;
       }
-      final AuditableRunner runner = Beans.get(AuditableRunner.class);
-      runner.run(
-          () -> {
-            try {
-              fetch(reader);
-            } catch (Exception e) {
-              log.error("Unable to fetch messages", e);
-            }
-          });
+      ContextAware.of()
+          .withTransaction(false)
+          .withUser(AuthUtils.getUser("admin"))
+          .build(
+              () -> {
+                try {
+                  fetch(reader);
+                } catch (Exception e) {
+                  log.error("Unable to fetch messages", e);
+                }
+              })
+          .run();
     }
   }
 

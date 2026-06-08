@@ -130,6 +130,7 @@ function processWidgetAttrs(field: Schema) {
         "colorPickerShowAlpha",
         "barcodeDisplayValue",
         "resetState",
+        "autoSize",
       ].indexOf(name) !== -1
     ) {
       val = String(value)?.toLowerCase?.() === "true";
@@ -308,6 +309,7 @@ export async function findViewFields(
         try {
           const { fields } = await fetchViewFields(
             viewFields?.[item.name]?.target || item.target,
+            viewFields?.[item.name]?.jsonTarget || item.jsonTarget,
             item.items
               .filter((item) => item.type === "field" && item.name)
               .map((item) => item.name) as string[],
@@ -375,13 +377,11 @@ export function processView(
     view &&
     view.items
   ) {
-    const hasCustomAttrsItems =
-      view.items.some((item) => {
-        const [jsonField, name] = item.name?.split(".", 2) ?? [];
-        return jsonField === "attrs" && meta.jsonFields?.["attrs"][name];
-      }) || findViewItem(meta, "attrs") != null;
+    const hasCustomAttrsField =
+      Object.values(meta.fields ?? {}).some((f) => f.jsonField === "attrs") ||
+      findViewItem(meta, "attrs") != null;
 
-    if (view.type === "grid" && !hasCustomAttrsItems) {
+    if (view.type === "grid" && !hasCustomAttrsField) {
       const findLast = (
         array: any[],
         callback: (element: Schema, index?: number, array?: any[]) => boolean,
@@ -415,7 +415,7 @@ export function processView(
       })(view.items);
     }
 
-    if (view.type === "form" && !hasCustomAttrsItems) {
+    if (view.type === "form" && !hasCustomAttrsField) {
       view.items.push({
         type: "panel",
         title: i18n.get("Attributes"),
@@ -569,7 +569,9 @@ export function processView(
       item.widget = "password";
     }
 
-    const isFormField = !["grid", "panel-related"].includes(view.type ?? "");
+    const isFormField =
+      meta.view?.type === "form" &&
+      !["panel-related"].includes(view.type ?? "");
 
     // convert dotted json fields
     if (isFormField && item.jsonField && item.name?.includes(".")) {
@@ -594,7 +596,7 @@ export function processView(
         jsonFields: [jsonItem],
         json: true,
         cols: 12,
-        colSpan: item.colSpan ?? 6,
+        colSpan: item.colSpan,
         showTitle: false,
       };
       processWidget(item);
@@ -674,13 +676,10 @@ export function processView(
           field.title = field.title || field.autoTitle;
         }
         const colSpan = (field.widgetAttrs || {}).colSpan || field.colSpan;
-        if (field.type === "one-to-many") {
-          field.type = "many-to-many";
-          field.canSelect = false;
-        }
         if (
           field.type === "separator" ||
-          (field.type === "many-to-many" && !field.widget)
+          ((field.type === "many-to-many" || field.type === "one-to-many") &&
+            !field.widget)
         ) {
           field.colSpan = colSpan || 12;
         }
@@ -731,7 +730,8 @@ export function processView(
             type.indexOf("-to-many") === -1 &&
             field.visibleInGrid &&
             !field.forceHidden &&
-            view.items?.find((i) => i.name === item.name + "." + field.name) == null
+            view.items?.find((i) => i.name === item.name + "." + field.name) ==
+              null
           ) {
             items.push({ ...field, name: item.name + "." + field.name });
           }

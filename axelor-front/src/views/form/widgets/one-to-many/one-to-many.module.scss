@@ -9,6 +9,10 @@ $treeNodePadding: 1.175rem;
   }
 }
 
+.headerTitle {
+  min-width: 0;
+}
+
 .tree {
   --ax-expandable-form-view-padding: 0 0 0 #{$treeNodePadding};
   [dir="rtl"] & {
@@ -61,10 +65,12 @@ $treeNodePadding: 1.175rem;
 .header {
   display: flex;
   align-items: center;
+  min-width: 0;
 
   .title {
     display: flex;
     flex: 1;
+    min-width: 0;
 
     .button {
       --bs-border-radius: 1rem;

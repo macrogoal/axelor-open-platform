@@ -7,8 +7,10 @@ package com.axelor.tomcat;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TomcatOptions {
@@ -23,11 +25,19 @@ public class TomcatOptions {
 
   private int maxThreads;
 
+  private int cacheMaxSize = 100 * 1024; // 100M
+
   private List<Path> roots = new ArrayList<>();
 
   private List<Path> classes = new ArrayList<>();
 
   private List<Path> libs = new ArrayList<>();
+
+  private Set<String> tldScanJars = new LinkedHashSet<>();
+
+  // axelor-web-*.jar is included by default so that @ServerEndpoint (and other
+  // Servlet 3.0 pluggability) classes shipped in axelor-web are discovered.
+  private Set<String> pluggabilityScanJars = new LinkedHashSet<>(List.of("axelor-web-*.jar"));
 
   public TomcatOptions(Path webapp) {
     this.roots.add(webapp);
@@ -49,6 +59,16 @@ public class TomcatOptions {
 
   public TomcatOptions addLib(Path path) {
     libs.add(path);
+    return this;
+  }
+
+  public TomcatOptions addTldScanJar(String pattern) {
+    tldScanJars.add(pattern);
+    return this;
+  }
+
+  public TomcatOptions addPluggabilityScanJar(String pattern) {
+    pluggabilityScanJars.add(pattern);
     return this;
   }
 
@@ -98,6 +118,14 @@ public class TomcatOptions {
     this.maxThreads = maxThreads;
   }
 
+  public int getCacheMaxSize() {
+    return cacheMaxSize;
+  }
+
+  public void setCacheMaxSize(int cacheMaxSize) {
+    this.cacheMaxSize = cacheMaxSize;
+  }
+
   public List<Path> getRoots() {
     return roots;
   }
@@ -108,6 +136,14 @@ public class TomcatOptions {
 
   public List<Path> getLibs() {
     return libs;
+  }
+
+  public Set<String> getTldScanJars() {
+    return tldScanJars;
+  }
+
+  public Set<String> getPluggabilityScanJars() {
+    return pluggabilityScanJars;
   }
 
   public Path getDocBase() {

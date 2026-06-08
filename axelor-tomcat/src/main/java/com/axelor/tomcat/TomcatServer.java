@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleEvent;
 import org.apache.catalina.LifecycleListener;
@@ -19,6 +20,7 @@ import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.FileResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
 import org.apache.coyote.AbstractProtocol;
+import org.apache.tomcat.util.scan.StandardJarScanFilter;
 
 public class TomcatServer {
 
@@ -75,9 +77,13 @@ public class TomcatServer {
     final StandardContext context = (StandardContext) tomcat.addWebapp(contextPath, docBase);
     final StandardRoot resources = new StandardRoot();
 
+    resources.setCacheMaxSize(options.getCacheMaxSize());
+
     context.setParentClassLoader(getClass().getClassLoader());
     context.setResources(resources);
     context.setUnpackWAR(false);
+
+    configureJarScanFilter(context);
 
     // additional webapp resources
     options.getExtraResources().stream()
@@ -116,8 +122,6 @@ public class TomcatServer {
               }
             });
 
-    Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
-
     return tomcat;
   }
 
@@ -130,9 +134,23 @@ public class TomcatServer {
     } catch (Exception e) {
       throw new RuntimeException("Cannot start Tomcat " + e.getMessage(), e);
     }
-    if (tomcat != null) {
-      tomcat.getServer().await();
+    Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
+    tomcat.getServer().await();
+  }
+
+  private void configureJarScanFilter(StandardContext context) {
+    var filter = new StandardJarScanFilter();
+    filter.setDefaultTldScan(false);
+    filter.setDefaultPluggabilityScan(false);
+    Set<String> tldScanJars = options.getTldScanJars();
+    if (!tldScanJars.isEmpty()) {
+      filter.setTldScan(String.join(",", tldScanJars));
     }
+    Set<String> pluggabilityScanJars = options.getPluggabilityScanJars();
+    if (!pluggabilityScanJars.isEmpty()) {
+      filter.setPluggabilityScan(String.join(",", pluggabilityScanJars));
+    }
+    context.getJarScanner().setJarScanFilter(filter);
   }
 
   public void stop() {

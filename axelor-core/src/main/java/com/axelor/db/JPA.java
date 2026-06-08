@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -89,8 +90,12 @@ public final class JPA {
   }
 
   /**
-   * Find by primary key.
+   * Finds an entity by its primary key.
    *
+   * @param <T> the type of the model class
+   * @param klass the class of the entity to find
+   * @param id the primary key of the entity to find
+   * @return entity found by the given id, null otherwise
    * @see EntityManager#find(Class, Object)
    */
   public static <T extends Model> T find(Class<T> klass, Long id) {
@@ -98,11 +103,27 @@ public final class JPA {
   }
 
   /**
-   * Find multiple entities by their primary key.<br>
-   * <br>
-   * Ensure to check the first-level cache first then the second-level cache and, if the entity is
+   * Finds an entity by its primary key.
+   *
+   * @param <T> the type of the model class
+   * @param klass the class of the entity to find
+   * @param id the primary key of the entity to find
+   * @return an {@code Optional} containing the found entity, or {@code Optional#empty()} if not
+   *     found
+   */
+  public static <T extends Model> Optional<T> findById(Class<T> klass, Long id) {
+    return Optional.ofNullable(find(klass, id));
+  }
+
+  /**
+   * Find multiple entities by their primary key.
+   *
+   * <p>Ensure to check the first-level cache first, then the second-level cache. If the entity is
    * found and already managed by the Hibernate Session, the cached entity will be added to the
-   * returned List, therefore skipping it from being fetched via the multi-load query.
+   * returned List. Therefore, skipping it from being fetched via the multi-load query.
+   *
+   * <p>WARNING: The list may contain NULL elements if an id was not found. The list size and order
+   * will match the input ids.
    *
    * @param klass The model class
    * @param ids The ids to load
@@ -120,6 +141,57 @@ public final class JPA {
   private static boolean isAutoFlushEnabled() {
     return !Objects.equals(
         "false", em().getEntityManagerFactory().getProperties().get("JPA.auto_flush"));
+  }
+
+  /**
+   * Retrieves a reference (proxy) to an entity instance with the specified ID without immediately
+   * loading its state from the database.
+   *
+   * <p>This method delegates to {@link jakarta.persistence.EntityManager#getReference(Class,
+   * Object)}. It is designed for performance optimization, particularly when you need to associate
+   * an entity (set a foreign key) without the overhead of a database SELECT query.
+   *
+   * <p><strong>Note:</strong> The returned object is likely a dynamic proxy. The database will only
+   * be accessed when you invoke a method on the proxy (other than getting the ID). If the entity
+   * does not exist in the database, an {@link jakarta.persistence.EntityNotFoundException} will be
+   * thrown at the time of that access, not at the time of calling this method.
+   *
+   * @param <T> the type of the model class
+   * @param modelClass the class of the entity to retrieve
+   * @param id the primary key of the entity
+   * @return a managed entity proxy instance with the state lazily fetched
+   * @throws jakarta.persistence.EntityNotFoundException if the entity state is accessed, and the
+   *     entity does not exist in the database
+   * @see jakarta.persistence.EntityManager#getReference(Class, Object)
+   */
+  public static <T extends Model> T getReferenceById(Class<T> modelClass, Long id) {
+    return JPA.em().getReference(modelClass, id);
+  }
+
+  /**
+   * Returns a lazy reference (proxy) to an entity if a row with the given id exists, or {@code
+   * null} otherwise.
+   *
+   * <p>Performs a cheap {@code SELECT COUNT(*)} hitting only the primary-key index, then returns
+   * {@link com.axelor.db.JPA#getReferenceById(Class, Long)}. Use this when callers only need {@link
+   * Model#getId()} / {@link com.axelor.db.EntityHelper#getEntityClass(Object)} from the entity and
+   * want {@code null} semantics for missing rows without paying the cost of a full row fetch.
+   *
+   * @param <T> the type of the model class
+   * @param klass the class of the entity
+   * @param id the primary key
+   * @return a proxy if the row exists, {@code null} otherwise
+   */
+  public static <T extends Model> T findReferenceById(Class<T> klass, Long id) {
+    if (id == null || id <= 0 || !Model.class.isAssignableFrom(klass)) {
+      return null;
+    }
+    final Long count =
+        em().createQuery(
+                "SELECT COUNT(e) FROM " + klass.getName() + " e WHERE e.id = :id", Long.class)
+            .setParameter("id", id)
+            .getSingleResult();
+    return count > 0 ? getReferenceById(klass, id) : null;
   }
 
   /**
@@ -625,20 +697,6 @@ public final class JPA {
         txn.rollback();
       }
     }
-  }
-
-  /**
-   * Run the given <code>task</code> inside a transaction that is committed after the task is
-   * completed and return the task result.
-   *
-   * @deprecated use {@link #callInTransaction(Supplier)}
-   * @param <T>
-   * @param task
-   * @return task result
-   */
-  @Deprecated(forRemoval = true)
-  public static <T> T withTransaction(Supplier<T> task) {
-    return callInTransaction(task);
   }
 
   public static <T> T callInTransaction(Supplier<T> task) {

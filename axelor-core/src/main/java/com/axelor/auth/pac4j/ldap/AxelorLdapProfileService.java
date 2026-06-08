@@ -9,9 +9,12 @@ import com.axelor.app.AvailableAppSettings;
 import com.axelor.auth.pac4j.AuthPac4jProfileService;
 import com.axelor.common.ObjectUtils;
 import com.axelor.common.StringUtils;
+import com.axelor.event.Observes;
+import com.axelor.events.ShutdownEvent;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.text.MessageFormat;
 import java.time.Duration;
@@ -35,6 +38,7 @@ import org.ldaptive.PooledConnectionFactory;
 import org.ldaptive.SearchOperation;
 import org.ldaptive.SearchRequest;
 import org.ldaptive.SearchResponse;
+import org.ldaptive.SearchScope;
 import org.ldaptive.ad.handler.ObjectGuidHandler;
 import org.ldaptive.ad.handler.ObjectSidHandler;
 import org.ldaptive.auth.Authenticator;
@@ -58,10 +62,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Singleton
-public class AxelorLdapProfileService extends LdapProfileService {
+public class AxelorLdapProfileService extends LdapProfileService implements Closeable {
 
   private final String groupsDn;
   private final String groupFilter;
+  private final boolean usersSearchSubtree;
+  private final boolean groupsSearchSubtree;
 
   protected static final String FILTER_FORMAT = "(%s=%s)";
 
@@ -113,6 +119,17 @@ public class AxelorLdapProfileService extends LdapProfileService {
             .map(Long::parseLong)
             .map(Duration::ofSeconds)
             .orElse(null);
+
+    usersSearchSubtree =
+        Optional.ofNullable(properties.get(AvailableAppSettings.AUTH_LDAP_USER_SEARCH_SUBTREE))
+            .filter(StringUtils::notBlank)
+            .map(Boolean::parseBoolean)
+            .orElse(true);
+    groupsSearchSubtree =
+        Optional.ofNullable(properties.get(AvailableAppSettings.AUTH_LDAP_GROUP_SEARCH_SUBTREE))
+            .filter(StringUtils::notBlank)
+            .map(Boolean::parseBoolean)
+            .orElse(true);
 
     final SaslConfig saslConfig = getSaslConfig(authenticationType);
     final SslConfig sslConfig;
@@ -199,14 +216,6 @@ public class AxelorLdapProfileService extends LdapProfileService {
     }
 
     final PooledConnectionFactory factory = new PooledConnectionFactory(config);
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  if (factory.isInitialized()) {
-                    factory.close();
-                  }
-                }));
     if (initializer != null) {
       factory.setActivator(
           conn -> {
@@ -226,6 +235,7 @@ public class AxelorLdapProfileService extends LdapProfileService {
       final SearchDnResolver searchDnResolver = new SearchDnResolver(factory);
       searchDnResolver.setBaseDn(usersDn);
       searchDnResolver.setUserFilter(userFilter);
+      searchDnResolver.setSubtreeSearch(usersSearchSubtree);
       dnResolver = searchDnResolver;
     } else {
       final String format =
@@ -249,6 +259,20 @@ public class AxelorLdapProfileService extends LdapProfileService {
     setUsernameAttribute(usernameAttribute);
     setPasswordAttribute(AxelorLdapProfileDefinition.PASSWORD);
     setProfileDefinition(new AxelorLdapProfileDefinition());
+  }
+
+  protected void onAppShutdown(@Observes ShutdownEvent event) {
+    close();
+  }
+
+  @Override
+  public void close() {
+    final ConnectionFactory factory = getConnectionFactory();
+    if (factory instanceof PooledConnectionFactory pooledConnectionFactory
+        && pooledConnectionFactory.isInitialized()) {
+      pooledConnectionFactory.close();
+      logger.info("LDAP connection pool closed");
+    }
   }
 
   @Override
@@ -295,6 +319,7 @@ public class AxelorLdapProfileService extends LdapProfileService {
     final SearchRequest request =
         new SearchRequest(
             groupsDn, filter, AxelorLdapGroupDefinition.ATTRIBUTES.stream().toArray(String[]::new));
+    request.setSearchScope(groupsSearchSubtree ? SearchScope.SUBTREE : SearchScope.ONELEVEL);
     final SearchOperation search = new SearchOperation(getConnectionFactory());
     final SearchResponse response;
 
@@ -343,6 +368,7 @@ public class AxelorLdapProfileService extends LdapProfileService {
     search.setEntryHandlers(new ObjectSidHandler(), new ObjectGuidHandler());
     final SearchRequest request =
         new SearchRequest(getUsersDn(), FILTER_FORMAT.formatted(getIdAttribute(), profile.getId()));
+    request.setSearchScope(usersSearchSubtree ? SearchScope.SUBTREE : SearchScope.ONELEVEL);
     final SearchResponse response;
 
     try {
@@ -407,6 +433,7 @@ public class AxelorLdapProfileService extends LdapProfileService {
   protected String setGroup(LdapProfile profile, String filter) throws LdapException {
     final SearchRequest request =
         new SearchRequest(groupsDn, filter, AxelorLdapGroupDefinition.NAME);
+    request.setSearchScope(groupsSearchSubtree ? SearchScope.SUBTREE : SearchScope.ONELEVEL);
     final SearchOperation search = new SearchOperation(getConnectionFactory());
     final SearchResponse response = search.execute(request);
     final LdapEntry entry = response.getEntry();

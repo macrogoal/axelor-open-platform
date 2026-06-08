@@ -7,11 +7,14 @@ package com.axelor.cache;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import com.axelor.cache.caffeine.CaffeineCache;
+import com.axelor.cache.caffeine.CaffeineCacheBuilder;
 import com.axelor.cache.event.RemovalCause;
 import com.axelor.cache.redisson.RedissonProvider;
 import com.axelor.cache.redisson.RedissonUtils;
@@ -25,6 +28,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.slf4j.Logger;
@@ -106,7 +110,7 @@ class CacheBuilderTest {
   }
 
   private void doBasicCacheOperations(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     useCache(
         cacheBuilderFactory.apply("test-cache").build(),
         cache -> {
@@ -142,7 +146,7 @@ class CacheBuilderTest {
   }
 
   private void doCacheLoaderOperations(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     useCache(
         cacheBuilderFactory
             .apply("test-cache-loader")
@@ -201,7 +205,7 @@ class CacheBuilderTest {
   }
 
   private void doExpireAfterWrite(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     useCache(
         cacheBuilderFactory.apply("test-write-expiry").expireAfterWrite(TTL).build(),
         cache -> {
@@ -228,7 +232,7 @@ class CacheBuilderTest {
   }
 
   private void doExpireAfterAccess(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     useCache(
         cacheBuilderFactory.apply("test-access-expiry").expireAfterAccess(TTL).build(),
         cache -> {
@@ -263,7 +267,8 @@ class CacheBuilderTest {
         });
   }
 
-  private void doMapOperations(Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+  private void doMapOperations(
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     useCache(
         cacheBuilderFactory.apply("test-map").build(),
         cache -> {
@@ -293,7 +298,7 @@ class CacheBuilderTest {
   }
 
   private void doRemovalListenerOperations(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     var removalResults = new ConcurrentHashMap<RemovalCause, Map<String, Object>>();
 
     useCache(
@@ -349,14 +354,39 @@ class CacheBuilderTest {
   @ParameterizedTest(name = "{0} - PutAll Operations")
   @EnumSource(CacheType.class)
   void testPutAllOperations(CacheType cacheType) {
+    assumeTrue(
+        hasHPExpire || cacheType != CacheType.REDISSON_NATIVE,
+        "redisson-native expireAfterWrite requires Redis HPEXPIRE support");
     doPutAllOperations(cacheType::getCacheBuilder);
   }
 
   private void doGetAllOperations(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
+    useCache(
+        cacheBuilderFactory.apply("test-get-all").build(),
+        cache -> {
+          // Existing
+          var initial =
+              Map.of(
+                  "key1", "value1",
+                  "key2", "value2",
+                  "key3", "value3");
+          cache.putAll(initial);
+
+          assertEquals(
+              initial, cache.getAll(initial.keySet()), "Should return all existing values");
+
+          // Mixed existing/missing
+          var mixedKeys = Set.of("key1", "key3", "key4");
+          var expectedMixed = Map.of("key1", "value1", "key3", "value3");
+
+          assertEquals(
+              expectedMixed, cache.getAll(mixedKeys), "Should return only existing values");
+        });
+
     useCache(
         cacheBuilderFactory
-            .apply("test-get-all")
+            .apply("test-get-all-loading")
             .build(key -> key.startsWith("load-") ? "loaded-" + key : null),
         cache -> {
           // Existing
@@ -389,9 +419,9 @@ class CacheBuilderTest {
   }
 
   private void doPutAllOperations(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     useCache(
-        cacheBuilderFactory.apply("test-put-all").build(),
+        cacheBuilderFactory.apply("test-put-all").expireAfterWrite(TTL).build(),
         cache -> {
           // Initial putAll
           Map<String, Object> batch1 =
@@ -420,6 +450,15 @@ class CacheBuilderTest {
           assertEquals("value1", cache.get("key1"), "Original entry should remain");
           assertEquals("value2-updated", cache.get("key2"), "Updated entry should persist");
           assertEquals("value99", cache.get("batch-key99"), "Last batch entry should exist");
+
+          // putAll should expire
+          await()
+              .atMost(Duration.ofSeconds(2))
+              .pollInterval(TTL.dividedBy(2))
+              .untilAsserted(
+                  () ->
+                      assertFalse(
+                          cache.asMap().containsKey("key1"), "putAll should expire entries"));
         });
   }
 
@@ -430,7 +469,7 @@ class CacheBuilderTest {
   }
 
   private void doSerializationOperations(
-      Function<String, CacheBuilder<String, Object>> cacheBuilderFactory) {
+      Function<String, CacheBuilder<String, Object, ?>> cacheBuilderFactory) {
     useCache(
         cacheBuilderFactory.apply("test-serialization").build(),
         cache -> {
@@ -511,6 +550,25 @@ class CacheBuilderTest {
 
     public void setName(String name) {
       this.name = name;
+    }
+  }
+
+  @Test
+  void testInMemoryBuilder() {
+    // Check fluent chaining
+    var builder =
+        CacheBuilder.newInMemoryBuilder()
+            .maximumSize(100)
+            .weakKeys()
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .weakValues()
+            .expireAfterAccess(Duration.ofMinutes(5))
+            .nonTenantAware();
+
+    assertInstanceOf(CaffeineCacheBuilder.class, builder);
+
+    try (var cache = builder.build()) {
+      assertInstanceOf(CaffeineCache.class, cache);
     }
   }
 

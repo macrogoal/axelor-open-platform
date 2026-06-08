@@ -5,6 +5,9 @@
 package com.axelor.db.tenants;
 
 import com.axelor.common.StringUtils;
+import com.axelor.inject.Beans;
+import jakarta.annotation.Nullable;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -12,7 +15,7 @@ import java.util.stream.Collectors;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 
 /** The tenant identifier resolver. */
-public class TenantResolver implements CurrentTenantIdentifierResolver {
+public class TenantResolver implements CurrentTenantIdentifierResolver<String> {
 
   static final ThreadLocal<String> CURRENT_HOST = new ThreadLocal<>();
   static final ThreadLocal<String> CURRENT_TENANT = new ThreadLocal<>();
@@ -27,6 +30,50 @@ public class TenantResolver implements CurrentTenantIdentifierResolver {
     if (!enabled) return;
     CURRENT_TENANT.set(tenantId);
     CURRENT_HOST.set(tenantHost);
+  }
+
+  public static void setCurrentTenant(String tenantId) {
+    if (!enabled) return;
+    CURRENT_TENANT.set(tenantId);
+    CURRENT_HOST.set(findTenantHost(tenantId));
+  }
+
+  public static void forEachTenant(Runnable runnable) {
+    if (!enabled) {
+      runnable.run();
+      return;
+    }
+
+    var current = currentTenantIdentifier();
+    try {
+      for (var tenant : getTenants(false).keySet()) {
+        setCurrentTenant(tenant);
+        runnable.run();
+      }
+    } finally {
+      setCurrentTenant(current);
+    }
+  }
+
+  @Nullable
+  private static String findTenantHost(String tenantId) {
+    var tenantConfigProvider = Beans.get(TenantConfigProvider.class);
+    var config =
+        tenantConfigProvider.find(tenantId == null ? TenantConfig.DEFAULT_TENANT_ID : tenantId);
+
+    if (config == null || Boolean.FALSE.equals(config.getActive())) {
+      return null;
+    }
+
+    var hostsValue = config.getTenantHosts();
+
+    if (StringUtils.isBlank(hostsValue)) {
+      return null;
+    }
+
+    var hosts = Arrays.asList(hostsValue.split("\\s*,\\s*"));
+
+    return hosts.isEmpty() ? null : hosts.get(0);
   }
 
   public static String currentTenantIdentifier() {

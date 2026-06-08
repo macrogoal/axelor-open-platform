@@ -5,7 +5,7 @@
 -->
 <xsd:schema targetNamespace="http://axelor.com/xml/ns/domain-models"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:dm="http://axelor.com/xml/ns/domain-models"
-  elementFormDefault="qualified" attributeFormDefault="unqualified" version="8.0">
+  elementFormDefault="qualified" attributeFormDefault="unqualified" version="8.2">
 
   <xsd:annotation>
     <xsd:documentation>
@@ -448,7 +448,7 @@
         <xsd:attribute name="large" type="xsd:boolean">
           <xsd:annotation>
             <xsd:documentation>
-              Whether the text value is large (use default LOB length).
+              Whether the text value is large (use bytea database type).
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
@@ -554,12 +554,30 @@
             </xsd:documentation>
           </xsd:annotation>
         </xsd:attribute>
+        <xsd:attribute name="large" type="xsd:boolean">
+          <xsd:annotation>
+            <xsd:documentation>
+              Whether the binary value is large (Reference to a Large Object stored in pg_largeobject system table).
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:attribute>
         <xsd:attribute name="default" use="prohibited"/>
         <xsd:attribute name="readonly" use="prohibited"/>
         <xsd:attribute name="unique" use="prohibited"/>
         <xsd:attribute name="hidden" use="prohibited"/>
         <xsd:attribute name="massUpdate" use="prohibited"/>
       </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+
+  <xsd:complexType name="Uuid">
+    <xsd:annotation>
+      <xsd:documentation>UUID Type.</xsd:documentation>
+    </xsd:annotation>
+    <xsd:complexContent>
+      <xsd:restriction base="dm:SimpleColumn">
+        <xsd:attribute name="selection" use="prohibited"/>
+      </xsd:restriction>
     </xsd:complexContent>
   </xsd:complexType>
 
@@ -926,6 +944,13 @@
             </xsd:documentation>
           </xsd:annotation>
         </xsd:element>
+        <xsd:element name="uuid" type="dm:Uuid">
+          <xsd:annotation>
+            <xsd:documentation>
+              UUID field.
+            </xsd:documentation>
+          </xsd:annotation>
+        </xsd:element>
         <xsd:element name="one-to-one" type="dm:OneToOneColumn">
           <xsd:annotation>
             <xsd:documentation>
@@ -1036,6 +1061,7 @@
         <xsd:documentation>
           Whether the records of this entity should be in
           unique sequence (else a global sequence will be used).
+          DEPRECATED: shouldn't be used, will use a sequence per entity
         </xsd:documentation>
       </xsd:annotation>
     </xsd:attribute>
@@ -1139,6 +1165,13 @@
           </xsd:enumeration>
         </xsd:restriction>
       </xsd:simpleType>
+    </xsd:attribute>
+    <xsd:attribute name="allocationSize" type="xsd:integer">
+      <xsd:annotation>
+        <xsd:documentation>
+          The amount to increment by when allocating sequence numbers from the sequence.
+        </xsd:documentation>
+      </xsd:annotation>
     </xsd:attribute>
   </xsd:complexType>
 

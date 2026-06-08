@@ -165,21 +165,22 @@ public class EntityGenerator {
     }
     mergedEntities.put(entity.getName(), entity);
 
+    lookupSuperClasses(entity);
+
     if (doLookup) {
-      lookupSuperClasses(entity);
+      Optional.ofNullable(entity.getTrack())
+          .ifPresent(
+              track ->
+                  track.getFields().stream()
+                      .map(TrackField::getName)
+                      .filter(fieldName -> !fieldExists(entity.getName(), fieldName))
+                      .forEach(
+                          fieldName ->
+                              log.error(
+                                  "{}: track unknown field: {}", entity.getName(), fieldName)));
     }
 
     checkSingleTableInheritance(entity);
-
-    Optional.ofNullable(entity.getTrack())
-        .ifPresent(
-            track ->
-                track.getFields().stream()
-                    .map(TrackField::getName)
-                    .filter(fieldName -> !fieldExists(entity.getName(), fieldName))
-                    .forEach(
-                        fieldName ->
-                            log.error("{}: track unknown field: {}", entity.getName(), fieldName)));
 
     final JavaType javaType = entity.toJavaClass();
     final JavaType repoType = entity.toRepoClass();

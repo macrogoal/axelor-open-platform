@@ -19,7 +19,7 @@ import picocli.CommandLine.Option;
 @Command(name = "run", description = "Run the application.")
 public class RunCommand implements CliCommand {
 
-  @Option(names = "--port", description = "The tomcat port nunber.", defaultValue = "8080")
+  @Option(names = "--port", description = "The tomcat port number.", defaultValue = "8080")
   private Integer port;
 
   @Option(names = "--base-dir", description = "The tomcat base directory.")
@@ -33,6 +33,26 @@ public class RunCommand implements CliCommand {
 
   @Option(names = "--max-threads", description = "Set the maximum number of worker threads.")
   private int maxThreads;
+
+  @Option(names = "--cache-max-size", description = "Set the maximum cache size for resources.")
+  private int cacheMaxSize;
+
+  @Option(
+      names = "--tld-scan-jars",
+      split = ",",
+      description =
+          "Comma-separated jar name patterns (e.g. \"jstl-*.jar,taglibs-*.jar\") to include "
+              + "when scanning for JSP taglib descriptors (META-INF/**/*.tld).")
+  private List<String> tldScanJars;
+
+  @Option(
+      names = "--pluggability-scan-jars",
+      split = ",",
+      description =
+          "Comma-separated jar name patterns (e.g. \"axelor-*.jar\") to include when "
+              + "scanning for Servlet 3.0 pluggability (META-INF/web-fragment.xml and "
+              + "@WebServlet/@WebFilter/@WebListener annotations).")
+  private List<String> pluggabilityScanJars;
 
   @Option(names = "--help", usageHelp = true, hidden = true)
   private boolean help;
@@ -77,6 +97,21 @@ public class RunCommand implements CliCommand {
       if (maxThreads > 0) {
         args.add("--max-threads");
         args.add(String.valueOf(maxThreads));
+      }
+
+      if (cacheMaxSize > 0) {
+        args.add("--cache-max-size");
+        args.add(String.valueOf(cacheMaxSize));
+      }
+
+      if (tldScanJars != null && !tldScanJars.isEmpty()) {
+        args.add("--tld-scan-jars");
+        args.add(String.join(",", tldScanJars));
+      }
+
+      if (pluggabilityScanJars != null && !pluggabilityScanJars.isEmpty()) {
+        args.add("--pluggability-scan-jars");
+        args.add(String.join(",", pluggabilityScanJars));
       }
 
       // add webapp

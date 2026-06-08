@@ -17,7 +17,6 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.ConstraintViolationException;
 import java.sql.SQLException;
-import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Arrays;
 import java.util.Optional;
 import javax.crypto.BadPaddingException;
@@ -58,6 +57,7 @@ public class ResponseInterceptor extends JpaSupport implements MethodInterceptor
         try {
           txn.begin();
         } catch (Exception ex) {
+          // ignore
         }
       }
       try {
@@ -92,9 +92,6 @@ public class ResponseInterceptor extends JpaSupport implements MethodInterceptor
       }
       if (ex instanceof ConstraintViolationException exception) {
         return onConstraintViolationException(exception, response);
-      }
-      if (ex instanceof SQLIntegrityConstraintViolationException exception) {
-        return onSQLIntegrityConstraintViolationException(exception, response);
       }
       if (ex instanceof SQLException exception) {
         return onSQLException(exception, response);
@@ -181,50 +178,29 @@ public class ResponseInterceptor extends JpaSupport implements MethodInterceptor
     return response;
   }
 
-  static final String REFERENCE_ERROR_TTILE = /*$$(*/ "Reference error" /*)*/;
+  static final String REFERENCE_ERROR_TITLE = /*$$(*/ "Reference error" /*)*/;
   static final String REFERENCE_ERROR_MESSAGE = /*$$(*/
       "The record(s) are referenced by other records. Please remove all the references first." /*)*/;
 
-  static final String UNIQUE_VIOLATION_ERROR_TTILE = /*$$(*/ "Unique constraint violation" /*)*/;
+  static final String UNIQUE_VIOLATION_ERROR_TITLE = /*$$(*/ "Unique constraint violation" /*)*/;
   static final String UNIQUE_VIOLATION_ERROR_MESSAGE = /*$$(*/
       "The record(s) can't be updated as it violates unique constraint." /*)*/;
 
-  static final String DEFAULT_ERROR_TTILE = /*$$(*/ "SQL error" /*)*/;
+  static final String TOO_LONG_ERROR_TITLE = /*$$(*/ "Value too long" /*)*/;
+  static final String TOO_LONG_ERROR_MESSAGE = /*$$(*/
+      "The value you entered exceeds the maximum allowed length. Please use fewer characters." /*)*/;
+
+  static final String CHECK_VIOLATION_ERROR_TITLE = /*$$(*/ "Check constraint violation" /*)*/;
+  static final String CHECK_VIOLATION_ERROR_MESSAGE = /*$$(*/
+      "The value you entered doesn't meet the required constraint." /*)*/;
+
+  static final String NOT_NULL_ERROR_TITLE = /*$$(*/ "Required field violation" /*)*/;
+  static final String NOT_NULL_ERROR_MESSAGE = /*$$(*/
+      "A field is required. Please provide a value." /*)*/;
+
+  static final String DEFAULT_ERROR_TITLE = /*$$(*/ "SQL error" /*)*/;
   static final String DEFAULT_ERROR_MESSAGE = /*$$(*/
       "Unexpected database error occurred on the server." /*)*/;
-
-  private Response onSQLIntegrityConstraintViolationException(
-      SQLIntegrityConstraintViolationException e, Response response) {
-    int errorNumber = e.getErrorCode();
-
-    String title = null;
-    String message = null;
-
-    // https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
-    switch (errorNumber) {
-      case 1217:
-      // fall through
-      case 1451: // foreign key violation
-        title = I18n.get(REFERENCE_ERROR_TTILE);
-        message = I18n.get(REFERENCE_ERROR_MESSAGE);
-        break;
-      case 1062: // unique constraint violation
-        title = I18n.get(UNIQUE_VIOLATION_ERROR_TTILE);
-        message = I18n.get(UNIQUE_VIOLATION_ERROR_MESSAGE);
-        break;
-      default:
-        title = I18n.get(DEFAULT_ERROR_TTILE);
-        message = I18n.get(DEFAULT_ERROR_MESSAGE);
-        break;
-    }
-
-    log.error("MySQL Error: {}", e.getMessage());
-
-    ResponseException error = new ResponseException(message, title, e);
-    response.setException(error);
-
-    return response;
-  }
 
   private Response onSQLException(SQLException e, Response response) {
 
@@ -244,15 +220,27 @@ public class ResponseInterceptor extends JpaSupport implements MethodInterceptor
     // https://www.postgresql.org/docs/current/errcodes-appendix.html
     switch (state) {
       case "23503": // foreign key violation
-        title = I18n.get(REFERENCE_ERROR_TTILE);
+        title = I18n.get(REFERENCE_ERROR_TITLE);
         message = I18n.get(REFERENCE_ERROR_MESSAGE);
         break;
       case "23505": // unique constraint violation
-        title = I18n.get(UNIQUE_VIOLATION_ERROR_TTILE);
+        title = I18n.get(UNIQUE_VIOLATION_ERROR_TITLE);
         message = I18n.get(UNIQUE_VIOLATION_ERROR_MESSAGE);
         break;
+      case "22001": // exceeds the maximum length
+        title = I18n.get(TOO_LONG_ERROR_TITLE);
+        message = I18n.get(TOO_LONG_ERROR_MESSAGE);
+        break;
+      case "23514": // check violation
+        title = I18n.get(CHECK_VIOLATION_ERROR_TITLE);
+        message = I18n.get(CHECK_VIOLATION_ERROR_MESSAGE);
+        break;
+      case "23502": // not null violation
+        title = I18n.get(NOT_NULL_ERROR_TITLE);
+        message = I18n.get(NOT_NULL_ERROR_MESSAGE);
+        break;
       default:
-        title = I18n.get(DEFAULT_ERROR_TTILE);
+        title = I18n.get(DEFAULT_ERROR_TITLE);
         message = I18n.get(DEFAULT_ERROR_MESSAGE);
         break;
     }

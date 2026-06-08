@@ -161,6 +161,7 @@ export function Button(props: WidgetProps) {
         [styles.help]: hasHelp && !titleHelp,
         [styles[variant]]: variant && styles[variant],
       })}
+      data-testid="button"
     >
       <div className={styles.title}>
         <span ref={btnTextRef} className={styles.titleContent}>

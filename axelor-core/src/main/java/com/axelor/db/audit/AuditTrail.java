@@ -13,16 +13,10 @@ import org.hibernate.action.spi.AfterTransactionCompletionProcess;
 import org.hibernate.action.spi.BeforeTransactionCompletionProcess;
 import org.hibernate.event.spi.EventSource;
 import org.hibernate.event.spi.PreDeleteEvent;
-import org.hibernate.event.spi.PreDeleteEventListener;
 import org.hibernate.event.spi.PreInsertEvent;
-import org.hibernate.event.spi.PreInsertEventListener;
 import org.hibernate.event.spi.PreUpdateEvent;
-import org.hibernate.event.spi.PreUpdateEventListener;
 
-public class AuditTrail
-    implements PreInsertEventListener, PreUpdateEventListener, PreDeleteEventListener {
-
-  private static final long serialVersionUID = 1L;
+public class AuditTrail {
 
   private final Map<Transaction, AuditTracker> trackers = new ConcurrentHashMap<>();
 
@@ -42,51 +36,49 @@ public class AuditTrail
               .getActionQueue()
               .registerProcess(
                   (AfterTransactionCompletionProcess)
-                      (success, session) -> trackers.remove(transaction));
+                      (success, session) -> {
+                        trackers
+                            .remove(transaction)
+                            .doAfterTransactionCompletion(success, sourceSession);
+                      });
           return tracker;
         });
   }
 
-  @Override
   public boolean onPreInsert(PreInsertEvent event) {
     final EventSource session = event.getSession();
     final AuditTracker tracker = get(session);
 
-    if (event.getEntity() instanceof Model) {
-      final Model entity = (Model) event.getEntity();
+    if (event.getEntity() instanceof Model entity) {
       final String[] names = event.getPersister().getPropertyNames();
       final Object[] state = event.getState();
-      tracker.track(entity, names, state, null);
+      tracker.track(session, entity, names, state, null);
       tracker.updated(entity);
     }
 
     return false;
   }
 
-  @Override
   public boolean onPreUpdate(PreUpdateEvent event) {
     final EventSource session = event.getSession();
     final AuditTracker tracker = get(session);
 
-    if (event.getEntity() instanceof Model) {
-      final Model entity = (Model) event.getEntity();
+    if (event.getEntity() instanceof Model entity) {
       final String[] names = event.getPersister().getPropertyNames();
       final Object[] state = event.getState();
       final Object[] oldState = event.getOldState();
-      tracker.track(entity, names, state, oldState);
+      tracker.track(session, entity, names, state, oldState);
       tracker.updated(entity);
     }
 
     return false;
   }
 
-  @Override
   public boolean onPreDelete(PreDeleteEvent event) {
     final EventSource session = event.getSession();
     final AuditTracker tracker = get(session);
 
-    if (event.getEntity() instanceof Model) {
-      final Model entity = (Model) event.getEntity();
+    if (event.getEntity() instanceof Model entity) {
       tracker.deleted(entity);
     }
 

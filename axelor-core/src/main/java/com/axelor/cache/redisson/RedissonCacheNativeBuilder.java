@@ -15,22 +15,20 @@ import org.redisson.api.options.MapOptions;
  *
  * <p>This builds an {@link AxelorCache} wrapping a {@link org.redisson.api.RMapCacheNative}.
  *
- * <p>Weak references are not supported in Redisson collections. When either {@code weakKeys} or
- * {@code weakValues} are used, TTL is set in order to approximate the behavior.
- *
  * @param <K> the type of keys maintained by this cache
  * @param <V> the type of mapped values
  */
 public class RedissonCacheNativeBuilder<K, V>
-    extends AbstractRedissonCacheBuilder<K, V, RMapCacheNative<K, V>, MapOptions<K, V>> {
+    extends AbstractRedissonCacheBuilder<
+        K, V, RedissonCacheNativeBuilder<K, V>, RMapCacheNative<K, V>, MapOptions<K, V>> {
 
   public RedissonCacheNativeBuilder(String cacheName) {
     super(cacheName);
   }
 
   @Override
-  protected MapOptions<K, V> newOptions() {
-    return MapOptions.<K, V>name(getCacheName());
+  protected MapOptions<K, V> newOptions(String name) {
+    return MapOptions.<K, V>name(name);
   }
 
   @Override
@@ -47,14 +45,17 @@ public class RedissonCacheNativeBuilder<K, V>
    * Not supported with native eviction. When removal listener is set, fall back to {@link
    * RedissonCacheBuilder}.
    */
+  @SuppressWarnings({"unchecked"})
   @Override
-  public <K1 extends K, V1 extends V> CacheBuilder<K1, V1> removalListener(
-      RemovalListener<? super K1, ? super V1> removalListener) {
+  public <K1 extends K, V1 extends V, B1 extends CacheBuilder<K1, V1, B1>>
+      CacheBuilder<K1, V1, B1> removalListener(
+          RemovalListener<? super K1, ? super V1> removalListener) {
     super.removalListener(removalListener);
 
-    @SuppressWarnings("unchecked")
-    var self = (CacheBuilder<K1, V1>) this;
+    var self = (CacheBuilder<K1, V1, B1>) this;
 
-    return removalListener != null ? new RedissonCacheBuilder<>(self) : self;
+    return (removalListener != null
+        ? (CacheBuilder<K1, V1, B1>) new RedissonCacheBuilder<>(self)
+        : self);
   }
 }

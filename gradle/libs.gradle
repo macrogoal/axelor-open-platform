@@ -3,35 +3,38 @@ def versions = ext.libsVersions = [:]
 
 // versions
 versions.guice = "7.0.0"
-versions.guava = "33.5.0-jre"
-versions.hibernate = "6.6.29.Final"
+versions.guava = "33.6.0-jre"
+versions.hibernate = "6.6.50.Final"
 versions.hibernate_validator = "8.0.3.Final"
-versions.caffeine = "3.2.2"
-versions.redisson = "3.51.0"
+versions.caffeine = "3.2.4"
+versions.redisson = "4.3.1"
 
-versions.groovy = "4.0.28"
-versions.graal_js = "24.2.2"
-versions.resteasy = "6.2.12.Final"
-versions.jackson = "2.20.0"
-versions.shiro = "2.0.5"
-versions.buji_pac4j = "9.1.0"
-versions.jakartaee_pac4j = "8.0.1"
-versions.pac4j = "6.2.2"
-versions.ldaptive = "2.4.2"
+versions.groovy = "4.0.32"
+versions.graal_js = "25.0.3"
+versions.resteasy = "6.2.16.Final"
+versions.jackson = "2.21.4"
+versions.jackson_annotations = "2.21"
+versions.shiro = "2.1.0"
+versions.buji_pac4j = "9.1.1"
+versions.jakartaee_pac4j = "8.0.3"
+versions.pac4j = "6.5.1"
+versions.ldaptive = "2.5.0"
 
-versions.junit5 = "5.13.4"
+versions.junit = "6.0.3"
 
-versions.slf4j = "2.0.17"
+versions.slf4j = "2.0.18"
 
-versions.tomcat = "10.1.46"
+versions.tomcat = "10.1.55"
 
-versions.asm = "9.8"
+versions.asm = "9.10.1"
 
-versions.flyway = "11.13.2"
+versions.flyway = "11.20.3"
+
+versions.swagger = "2.2.50"
 
 // unit testing
-libs.junit_jupiter = "org.junit.jupiter:junit-jupiter:${versions.junit5}"
-libs.junit_launcher = "org.junit.platform:junit-platform-launcher:1.13.4" // for IDE
+libs.junit_jupiter = "org.junit.jupiter:junit-jupiter:${versions.junit}"
+libs.junit_launcher = "org.junit.platform:junit-platform-launcher:${versions.junit}" // for IDE
 
 // logging
 libs.slf4j_api = "org.slf4j:slf4j-api:${versions.slf4j}"
@@ -44,16 +47,16 @@ libs.slf4j_base = [
 ]
 
 libs.slf4j_logback = libs.slf4j_base + [
-  "ch.qos.logback:logback-core:1.5.18",
-  "ch.qos.logback:logback-classic:1.5.18",
-  "org.jline:jansi:3.30.6"
+  "ch.qos.logback:logback-core:1.5.32",
+  "ch.qos.logback:logback-classic:1.5.32",
+  "org.jline:jansi:4.1.0"
 ]
 
 // Guava
 libs.guava = "com.google.guava:guava:${versions.guava}"
 
 // yaml
-libs.snakeyaml = "org.yaml:snakeyaml:2.5"
+libs.snakeyaml = "org.yaml:snakeyaml:2.6"
 
 // Exclude guava and use explicit version : to fix CVE in transitive dependencies
 def excludeGuava = { name ->
@@ -83,7 +86,7 @@ libs.asm = [
 ]
 
 // Byte Buddy
-libs.byte_buddy = "net.bytebuddy:byte-buddy:1.17.7"
+libs.byte_buddy = "net.bytebuddy:byte-buddy:1.18.8"
 
 // Graal JS
 libs.graal_js = [
@@ -92,13 +95,13 @@ libs.graal_js = [
 ]
 
 // jakarta libs
-libs.jakarta_jaxb = "jakarta.xml.bind:jakarta.xml.bind-api:4.0.4"
+libs.jakarta_jaxb = "jakarta.xml.bind:jakarta.xml.bind-api:4.0.5"
 libs.jakarta_servlet = "jakarta.servlet:jakarta.servlet-api:6.0.0"
 libs.jakarta_mail = [
-  "org.eclipse.angus:jakarta.mail:2.0.4",
+  "org.eclipse.angus:jakarta.mail:2.0.5",
   "org.eclipse.angus:angus-activation:2.0.3"
 ]
-libs.greenmail = "com.icegreen:greenmail-junit5:2.1.5"
+libs.greenmail = "com.icegreen:greenmail-junit5:2.1.8"
 libs.websocket_api = [
   "jakarta.websocket:jakarta.websocket-api:2.1.1",
   "jakarta.websocket:jakarta.websocket-client-api:2.1.1"
@@ -107,8 +110,7 @@ libs.jakarta_annotation = "jakarta.annotation:jakarta.annotation-api:2.1.1"
 
 // jdbc
 libs.jdbc_hsqldb = "org.hsqldb:hsqldb:2.7.4"
-libs.jdbc_postgres = "org.postgresql:postgresql:42.7.8"
-libs.jdbc_mysql = "com.mysql:mysql-connector-j:9.4.0"
+libs.jdbc_postgres = "org.postgresql:postgresql:42.7.11"
 
 // Hibernate
 libs.hibernate = [
@@ -132,15 +134,15 @@ libs.redisson = [
   // overrides jackson version used
   "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson}"
 ]
-libs.hazelcast = "com.hazelcast:hazelcast:5.5.0"
+libs.hazelcast = "com.hazelcast:hazelcast:5.6.0"
 libs.caffeine = [
   "com.github.ben-manes.caffeine:caffeine:${versions.caffeine}",
   "com.github.ben-manes.caffeine:jcache:${versions.caffeine}"
 ]
 libs.infinispan = [
-  "org.infinispan:infinispan-hibernate-cache-v62:15.2.6.Final",
-  "org.infinispan:infinispan-core:15.2.6.Final",
-  "org.infinispan:infinispan-jcache:15.2.6.Final"
+  "org.infinispan:infinispan-hibernate-cache-v66:16.1.4",
+  "org.infinispan:infinispan-core:16.1.4",
+  "org.infinispan:infinispan-jcache:16.1.4"
 ]
 
 // apache tika
@@ -152,15 +154,13 @@ libs.flywaydb = [
     exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-toml'
   },
   "org.flywaydb:flyway-database-hsqldb:${versions.flyway}",
-  "org.flywaydb:flyway-database-oracle:${versions.flyway}",
   "org.flywaydb:flyway-database-postgresql:${versions.flyway}",
-  "org.flywaydb:flyway-mysql:${versions.flyway}",
   // overrides jackson version used
   "com.fasterxml.jackson.dataformat:jackson-dataformat-toml:${versions.jackson}"
 ]
 
 // eclipselink
-libs.eclipselink_moxy = dependencies.create("org.eclipse.persistence:org.eclipse.persistence.moxy:4.0.7") {
+libs.eclipselink_moxy = dependencies.create("org.eclipse.persistence:org.eclipse.persistence.moxy:4.0.9") {
   exclude group: 'org.eclipse.angus'
 }
 
@@ -218,12 +218,12 @@ libs.resteasy_server = [
   dependencies.create("org.jboss.resteasy:resteasy-undertow:${versions.resteasy}") {
     exclude module: "jandex", group: "org.jboss"
   },
-  "io.undertow:undertow-core:2.3.19.Final",
-  "io.undertow:undertow-servlet:2.3.19.Final"
+  "io.undertow:undertow-core:2.3.24.Final",
+  "io.undertow:undertow-servlet:2.3.24.Final"
 ]
 
 libs.swagger_jaxrs2 = [
-  dependencies.create("io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.37") {
+  dependencies.create("io.swagger.core.v3:swagger-jaxrs2-jakarta:${versions.swagger}") {
     exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
     exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
     exclude group: "com.fasterxml.jackson.jakarta.rs", module: "jackson-jakarta-rs-json-provider"
@@ -238,7 +238,7 @@ libs.swagger_jaxrs2 = [
 libs.jackson_libs = [
   "com.fasterxml.jackson.core:jackson-core:${versions.jackson}",
   "com.fasterxml.jackson.core:jackson-databind:${versions.jackson}",
-  "com.fasterxml.jackson.core:jackson-annotations:2.20",
+  "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson_annotations}",
   "com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-json-provider:${versions.jackson}",
   excludeGuava("com.fasterxml.jackson.datatype:jackson-datatype-guava:${versions.jackson}"),
   "com.fasterxml.jackson.module:jackson-module-parameter-names:${versions.jackson}",
@@ -285,19 +285,19 @@ libs.pac4j = libs.buji_pac4j + [
 ]
 
 // UnboundID LDAP SDK (for testing only)
-libs.unboundid_ldapsdk = 'com.unboundid:unboundid-ldapsdk:7.0.3'
+libs.unboundid_ldapsdk = 'com.unboundid:unboundid-ldapsdk:7.0.4'
 
 // commons
 libs.commons_jxpath = "commons-jxpath:commons-jxpath:1.4.0"
 libs.commons_csv = [
   "org.apache.commons:commons-csv:1.14.1",
-  "commons-io:commons-io:2.20.0"
+  "commons-io:commons-io:2.22.0"
 ]
 
 // BIRT Runtime
 
 def birt_module = { name ->
-  dependencies.create("org.eclipse.birt:${name}:4.21.0") {
+  dependencies.create("org.eclipse.birt:${name}:4.23.0") {
     exclude module: "jetty-servlet-api"
     exclude module: "xml-apis"
   }
@@ -354,7 +354,7 @@ libs.birt_runtime = [
 ]
 
 // Quartz Scheduler
-libs.quartz = dependencies.create("org.quartz-scheduler:quartz:2.5.0") {
+libs.quartz = dependencies.create("org.quartz-scheduler:quartz:2.5.2") {
   exclude module: "c3p0"
 }
 
@@ -365,7 +365,7 @@ libs.xstream = [
 ]
 
 // jsoup for html parsing & sanitize
-libs.jsoup = "org.jsoup:jsoup:1.21.2"
+libs.jsoup = "org.jsoup:jsoup:1.22.2"
 
 // StringTemplate
 libs.ST4 = "org.antlr:ST4:4.3.4"
@@ -384,17 +384,16 @@ libs.jasypt = "org.jasypt:jasypt:1.9.3"
 
 libs.picocli = "info.picocli:picocli:4.7.7"
 
-libs.minio = [
-  dependencies.create("io.minio:minio:8.5.17") {
-    exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
-    exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
-    exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
-    exclude group: "org.apache.commons", module: "commons-compress"
-  },
-  // CVE-2025-48924
-  "org.apache.commons:commons-compress:1.28.0"
-]
+libs.minio = dependencies.create("io.minio:minio:8.6.0") {
+  exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+  exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+  exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+}
 
 libs.totp = dependencies.create('dev.samstevens.totp:totp:1.7.1') {
   exclude group: 'com.beust', module: 'jcommander'
 }
+
+libs.zxcvbn4j = "com.nulab-inc:zxcvbn:1.9.0"
+
+libs.ua_parser = "com.github.ua-parser:uap-java:1.6.1"

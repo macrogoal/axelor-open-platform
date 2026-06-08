@@ -27,7 +27,6 @@ dependencies {
 
   testImplementation libs.jdbc_hsqldb
   implementation libs.jdbc_postgres
-  implementation libs.jdbc_mysql
 
   api libs.hibernate
 
@@ -74,6 +73,8 @@ dependencies {
   implementation libs.picocli
 
   implementation libs.totp
+  implementation libs.zxcvbn4j
+  implementation libs.ua_parser
 
   testImplementation libs.greenmail
   testImplementation libs.unboundid_ldapsdk

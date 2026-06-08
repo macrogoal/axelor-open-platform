@@ -31,10 +31,12 @@ export type {
   SelectValue,
 } from "@axelor/ui";
 
-export interface SelectProps<Type, Multiple extends boolean>
-  extends AxSelectProps<Type, Multiple> {
+export interface SelectProps<
+  Type,
+  Multiple extends boolean,
+> extends AxSelectProps<Type, Multiple> {
   canSelect?: boolean;
-  fetchOptions?: (inputValue: string) => Promise<Type[]>;
+  fetchOptions?: (inputValue: string, signal: AbortSignal) => Promise<Type[]>;
   canCreateOnTheFly?: boolean;
   canShowNoResultOption?: boolean;
   onShowCreateAndSelect?: (inputValue: string) => void;
@@ -59,6 +61,7 @@ function SelectInner<Type, Multiple extends boolean>(
     onShowCreateAndSelect,
     onInputChange,
     onOpen,
+    onClose,
     canSelect = true,
     openOnFocus = true,
     value = null,
@@ -71,8 +74,10 @@ function SelectInner<Type, Multiple extends boolean>(
   const [inputValue, setInputValue] = useState("");
 
   const [ready, setReady] = useState(!fetchOptions);
-  const selectRef = useRefs(ref);
+  const selectRef = useRef<HTMLDivElement>(null);
+  const combinedRef = useRefs(selectRef, ref);
   const loadTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const abortRef = useRef<AbortController>(undefined);
 
   const loadOptions = useCallback(
     (inputValue: string) => {
@@ -80,13 +85,36 @@ function SelectInner<Type, Multiple extends boolean>(
         clearTimeout(loadTimerRef.current);
       }
 
+      const abortController = new AbortController();
+      if (abortRef.current) {
+        abortRef.current.abort(
+          new DOMException("Concurrent request", "AbortError"),
+        );
+      }
+      abortRef.current = abortController;
+
       loadTimerRef.current = setTimeout(
         async () => {
           if (fetchOptions) {
-            const items = await fetchOptions(inputValue);
-            loadTimerRef.current = undefined;
-            setItems(items || []);
-            setReady(true);
+            try {
+              const items = await fetchOptions(
+                inputValue,
+                abortController.signal,
+              );
+              loadTimerRef.current = undefined;
+              if (!abortController.signal.aborted) {
+                setItems(items || []);
+                setReady(true);
+              }
+            } catch (error) {
+              // Ignore AbortError
+              if (
+                !(error instanceof DOMException) ||
+                error.name !== "AbortError"
+              ) {
+                throw error;
+              }
+            }
           }
         },
         inputValue ? 300 : 0,
@@ -95,25 +123,47 @@ function SelectInner<Type, Multiple extends boolean>(
     [fetchOptions],
   );
 
+  const refs = useRef({
+    fetchOptions,
+    loadOptions,
+    inputValue,
+  });
+
+  useEffect(() => {
+    refs.current = {
+      fetchOptions,
+      loadOptions,
+      inputValue,
+    };
+  }, [fetchOptions, loadOptions, inputValue]);
+
+  const isOpenRef = useRef(false);
+
   const handleOpen = useCallback(() => {
+    isOpenRef.current = true;
     if (onOpen) onOpen();
-    if (fetchOptions && !inputValue && !loadTimerRef.current) {
-      loadOptions("");
+    const {
+      fetchOptions: _fetchOptions,
+      loadOptions: _loadOptions,
+      inputValue: _inputValue,
+    } = refs.current;
+    if (_fetchOptions && !_inputValue && !loadTimerRef.current) {
+      _loadOptions("");
     }
-  }, [fetchOptions, inputValue, loadOptions, onOpen]);
+  }, [onOpen]);
 
   const handleClose = useCallback(() => {
+    isOpenRef.current = false;
+    onClose?.();
     setReady(false);
-  }, []);
+  }, [onClose]);
 
   const handleInputChange = useCallback(
     (text: string) => {
       setInputValue(text);
       if (onInputChange) onInputChange(text);
-      if (fetchOptions) {
-        if (text) {
-          loadOptions(text);
-        }
+      if (isOpenRef.current && fetchOptions) {
+        loadOptions(text);
       }
     },
     [fetchOptions, loadOptions, onInputChange],
@@ -223,7 +273,7 @@ function SelectInner<Type, Multiple extends boolean>(
       clearOnBlur
       clearOnEscape
       {...selectProps}
-      ref={selectRef}
+      ref={combinedRef}
       value={value}
       autoFocus={autoFocus}
       readOnly={readOnly || !canSelect}
@@ -233,7 +283,10 @@ function SelectInner<Type, Multiple extends boolean>(
       onInputChange={handleInputChange}
       onOpen={handleOpen}
       onChange={handleChange}
-      className={clsx(className, { [styles.readonly]: readOnly })}
+      className={clsx(className, {
+        [styles.readonly]: readOnly,
+        [styles.disabled]: selectProps.disabled,
+      })}
       menuOptions={{
         maxWidth: 600,
         ...menuOptions,

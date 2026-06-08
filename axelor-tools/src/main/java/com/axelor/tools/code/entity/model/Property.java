@@ -337,6 +337,7 @@ public abstract class Property {
     if (type == PropertyType.DATETIME && isTrue(tz)) return "java.time.ZonedDateTime";
     if (type == PropertyType.DATETIME) return "java.time.LocalDateTime";
     if (type == PropertyType.BINARY) return "byte[]";
+    if (type == PropertyType.UUID) return "java.util.UUID";
     if (type == PropertyType.ENUM) return target;
     if (type == PropertyType.ONE_TO_ONE) return target;
     if (type == PropertyType.MANY_TO_ONE) return target;
@@ -876,7 +877,7 @@ public abstract class Property {
       return null;
     }
 
-    if (isFalse(entity.getSequential()) || isTrue(entity.getMappedSuperClass())) {
+    if (isTrue(entity.getMappedSuperClass())) {
       return List.of(
           new JavaAnnotation("jakarta.persistence.Id"),
           new JavaAnnotation("jakarta.persistence.GeneratedValue")
@@ -884,16 +885,14 @@ public abstract class Property {
     }
 
     String name = entity.getTable() + "_SEQ";
+    JavaAnnotation entitySequenceAnnotation =
+        new JavaAnnotation("com.axelor.db.hibernate.sequence.EntitySequence")
+            .param("name", "{0:s}", name);
+    if (entity.getAllocationSize() > 0) {
+      entitySequenceAnnotation.param("allocationSize", String.valueOf(entity.getAllocationSize()));
+    }
 
-    return List.of(
-        new JavaAnnotation("jakarta.persistence.Id"),
-        new JavaAnnotation("jakarta.persistence.GeneratedValue")
-            .param("strategy", "{0:m}", "jakarta.persistence.GenerationType.SEQUENCE")
-            .param("generator", "{0:s}", name),
-        new JavaAnnotation("jakarta.persistence.SequenceGenerator")
-            .param("name", "{0:s}", name)
-            .param("sequenceName", "{0:s}", name)
-            .param("allocationSize", "{0:l}", 1));
+    return List.of(new JavaAnnotation("jakarta.persistence.Id"), entitySequenceAnnotation);
   }
 
   private JavaAnnotation $equalsInclude(Entity entity) {
@@ -982,10 +981,10 @@ public abstract class Property {
       return annotations;
     }
 
-    if (isTrue(large) || type == PropertyType.BINARY) {
+    if (isTrue(large) && type == PropertyType.BINARY) {
       return List.of(
-          new JavaAnnotation("jakarta.persistence.Basic")
-              .param("fetch", "{0:m}", "jakarta.persistence.FetchType.LAZY"));
+          new JavaAnnotation("org.hibernate.annotations.JdbcTypeCode")
+              .param("value", "{0:m}", "java.sql.Types.BLOB"));
     }
 
     return null;
@@ -1495,6 +1494,9 @@ public abstract class Property {
 
   @XmlType(name = "enum")
   static class EnumProperty extends Property {}
+
+  @XmlType(name = "uuid")
+  static class UUIDProperty extends Property {}
 
   @XmlType(name = "one-to-one")
   static class OneToOneProperty extends Property {}

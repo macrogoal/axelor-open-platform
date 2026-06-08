@@ -151,7 +151,7 @@ public class ViewService extends AbstractService {
       meta.putAll(MetaStore.findFields(modelClass, names));
     } else if (MetaJsonRecord.class.getName().equals(model)) {
       names.add("attrs");
-      meta.putAll(MetaStore.findFields(modelClass, names));
+      meta.putAll(MetaStore.findFields(modelClass, names, jsonModel));
       jsonFields.put("attrs", MetaStore.findJsonFields(jsonModel));
     }
 
@@ -164,13 +164,14 @@ public class ViewService extends AbstractService {
   @GET
   @Path("views/{model}")
   @Hidden
-  public Response views(@PathParam("model") String model) {
+  public Response views(
+      @PathParam("model") String model, @QueryParam("jsonModel") String jsonModel) {
     final MultivaluedMap<String, String> params = getUriInfo().getQueryParameters(true);
     final Map<String, String> views = new HashMap<>();
     for (String mode : params.keySet()) {
       views.put(mode, params.getFirst(mode));
     }
-    return service.findViews(findClass(model), views);
+    return service.findViews(findClass(model), views, jsonModel);
   }
 
   private Set<String> findNames(final Set<String> names, final AbstractWidget widget) {
@@ -258,7 +259,7 @@ public class ViewService extends AbstractService {
       @QueryParam("type") String type,
       @QueryParam("jsonModel") String jsonModel) {
 
-    final Response response = service.findView(model, name, type);
+    final Response response = service.findView(model, name, type, jsonModel);
     final AbstractView view = (AbstractView) response.getData();
 
     final Map<String, Object> data = new HashMap<>();
@@ -266,7 +267,7 @@ public class ViewService extends AbstractService {
 
     if (view instanceof Search search && search.getSearchForm() != null) {
       String searchForm = search.getSearchForm();
-      Response searchResponse = service.findView(null, searchForm, "form");
+      Response searchResponse = service.findView(null, searchForm, "form", jsonModel);
       data.put("searchForm", searchResponse.getData());
     }
 
@@ -289,7 +290,7 @@ public class ViewService extends AbstractService {
       final Map<String, Object> jsonFieldsMap = new HashMap<>();
       for (Property jsonField : jsonFields) {
         Map<String, Object> jsonFieldMap =
-            MetaJsonRecord.class.getName().equals(model) && ObjectUtils.notEmpty(jsonModel)
+            MetaJsonRecord.class.getName().equals(model)
                 ? MetaStore.findJsonFields(jsonModel)
                 : MetaStore.findJsonFields(model, jsonField.getName());
         if (ObjectUtils.notEmpty(jsonFieldMap)) {
@@ -299,10 +300,10 @@ public class ViewService extends AbstractService {
       if (ObjectUtils.notEmpty(jsonFieldsMap)) {
         data.put("jsonFields", jsonFieldsMap);
       }
-      if (MetaJsonRecord.class.getName().equals(model)) {
+      if (MetaJsonRecord.class.isAssignableFrom(modelClass)) {
         names.add("name");
       }
-      data.putAll(MetaStore.findFields(modelClass, names));
+      data.putAll(MetaStore.findFields(modelClass, names, jsonModel));
     }
 
     response.setData(data);
@@ -315,16 +316,10 @@ public class ViewService extends AbstractService {
   @Path("view")
   @Hidden
   public Response view(Request request) {
-
     final Map<String, Object> data = request.getData();
     final String name = (String) data.get("name");
     final String type = (String) data.get("type");
-    String jsonModel = null;
-    try {
-      jsonModel = (String) ((Map<?, ?>) data.get("context")).get("jsonModel");
-    } catch (Exception e) {
-      // ignore
-    }
+    final String jsonModel = (String) data.get("jsonModel");
 
     return view(request.getModel(), name, type, jsonModel);
   }
@@ -334,7 +329,11 @@ public class ViewService extends AbstractService {
   @Hidden
   public Response viewFields(Request request) {
     final Response response = new Response();
-    response.setData(MetaStore.findFields(request.getBeanClass(), request.getFields()));
+    final String jsonModel =
+        ObjectUtils.notEmpty(request.getData())
+            ? (String) request.getData().get("jsonModel")
+            : null;
+    response.setData(MetaStore.findFields(request.getBeanClass(), request.getFields(), jsonModel));
     return response;
   }
 
@@ -422,6 +421,10 @@ public class ViewService extends AbstractService {
         filterViewName != null
             ? (SearchFilters) XMLViews.findView(filterViewName, "search-filters")
             : null;
+
+    if (view == null) {
+      throw new IllegalArgumentException("Trying to save invalid view schema.");
+    }
 
     final List<AbstractWidget> items = new ArrayList<>();
     final Set<String> names = new HashSet<>();
@@ -531,6 +534,10 @@ public class ViewService extends AbstractService {
                   items.add(widget);
                 });
       }
+    }
+
+    if (json.get("jsonModel") instanceof String jsonModel && StringUtils.notBlank(jsonModel)) {
+      view.setJsonModel(jsonModel);
     }
 
     view.setCustomViewShared((Boolean) json.get("customViewShared"));

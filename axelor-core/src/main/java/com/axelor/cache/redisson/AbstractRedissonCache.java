@@ -61,6 +61,21 @@ public abstract class AbstractRedissonCache<K, V, M extends RMap<K, V>>
   }
 
   @Override
+  public boolean expire(Duration ttl) {
+    return cache.expire(ttl);
+  }
+
+  @Override
+  public boolean clearExpire() {
+    return cache.clearExpire();
+  }
+
+  @Override
+  public long remainTimeToLive() {
+    return cache.remainTimeToLive();
+  }
+
+  @Override
   public void invalidateAll() {
     cache.clear();
   }

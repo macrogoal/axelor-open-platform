@@ -6,7 +6,9 @@ package com.axelor.cache;
 
 import com.axelor.cache.caffeine.CaffeineCacheBuilder;
 import com.axelor.cache.event.RemovalListener;
+import com.axelor.db.tenants.TenantModule;
 import java.time.Duration;
+import java.util.function.Function;
 
 /**
  * A builder of {@link AxelorCache} instances
@@ -14,7 +16,7 @@ import java.time.Duration;
  * @param <K> the type of keys maintained by this cache
  * @param <V> the type of mapped values
  */
-public abstract class CacheBuilder<K, V> {
+public abstract class CacheBuilder<K, V, B extends CacheBuilder<K, V, B>> {
 
   private final String cacheName;
 
@@ -24,9 +26,7 @@ public abstract class CacheBuilder<K, V> {
 
   private Duration expireAfterAccess;
 
-  private boolean weakKeys;
-
-  private boolean weakValues;
+  private boolean tenantAware = true;
 
   private RemovalListener<? super K, ? super V> removalListener;
 
@@ -52,13 +52,12 @@ public abstract class CacheBuilder<K, V> {
     this.cacheName = cacheName;
   }
 
-  protected CacheBuilder(CacheBuilder<K, V> builder) {
+  protected CacheBuilder(CacheBuilder<K, V, ?> builder) {
     this(builder.cacheName);
     this.maximumSize = builder.maximumSize;
     this.expireAfterWrite = builder.expireAfterWrite;
     this.expireAfterAccess = builder.expireAfterAccess;
-    this.weakKeys = builder.weakKeys;
-    this.weakValues = builder.weakValues;
+    this.tenantAware = builder.tenantAware;
     this.removalListener = builder.removalListener;
   }
 
@@ -75,20 +74,18 @@ public abstract class CacheBuilder<K, V> {
    * @param <V> the value type of the cache
    * @return a new {@code CacheBuilder} instance
    */
-  public static <K, V> CacheBuilder<K, V> newBuilder(String name) {
+  public static <K, V, B extends CacheBuilder<K, V, B>> B newBuilder(String name) {
     return fromCacheName(stackWalker.getCallerClass().getName() + ":" + name);
   }
 
   /**
-   * Constructs a new {@code CacheBuilder} instance for an in-memory cache.
-   *
-   * <p>This currently uses Caffeine as the in-memory cache provider.
+   * Constructs a new {@code CaffeineCacheBuilder} instance for an in-memory cache.
    *
    * @param <K> the key type of the cache
    * @param <V> the value type of the cache
-   * @return a new {@code CacheBuilder} instance
+   * @return a new {@code CaffeineCacheBuilder} instance
    */
-  public static <K, V> CacheBuilder<K, V> newInMemoryBuilder() {
+  public static <K, V> CaffeineCacheBuilder<K, V> newInMemoryBuilder() {
     return new CaffeineCacheBuilder<>();
   }
 
@@ -104,8 +101,8 @@ public abstract class CacheBuilder<K, V> {
    * @return a new {@code CacheBuilder} instance
    */
   @SuppressWarnings("unchecked")
-  protected static <K, V> CacheBuilder<K, V> fromCacheName(String name) {
-    return cacheType.getCacheBuilder(name);
+  protected static <K, V, B extends CacheBuilder<K, V, B>> B fromCacheName(String name) {
+    return (B) cacheType.getCacheBuilder(name);
   }
 
   /**
@@ -121,6 +118,11 @@ public abstract class CacheBuilder<K, V> {
     return cacheName;
   }
 
+  @SuppressWarnings("unchecked")
+  protected B self() {
+    return (B) this;
+  }
+
   protected int getMaximumSize() {
     return maximumSize;
   }
@@ -134,9 +136,9 @@ public abstract class CacheBuilder<K, V> {
    * @param maximumSize the maximum size of the cache
    * @return this {@code CacheBuilder} instance (for chaining)
    */
-  public CacheBuilder<K, V> maximumSize(int maximumSize) {
+  public B maximumSize(int maximumSize) {
     this.maximumSize = maximumSize;
-    return this;
+    return self();
   }
 
   protected Duration getExpireAfterWrite() {
@@ -149,9 +151,9 @@ public abstract class CacheBuilder<K, V> {
    * @param expireAfterWrite the duration after which entries will expire following the last write
    * @return this {@code CacheBuilder} instance (for chaining)
    */
-  public CacheBuilder<K, V> expireAfterWrite(Duration expireAfterWrite) {
+  public B expireAfterWrite(Duration expireAfterWrite) {
     this.expireAfterWrite = expireAfterWrite;
-    return this;
+    return self();
   }
 
   protected Duration getExpireAfterAccess() {
@@ -164,43 +166,27 @@ public abstract class CacheBuilder<K, V> {
    * @param expireAfterAccess the duration after which entries will expire following the last access
    * @return this {@code CacheBuilder} instance (for chaining)
    */
-  public CacheBuilder<K, V> expireAfterAccess(Duration expireAfterAccess) {
+  public B expireAfterAccess(Duration expireAfterAccess) {
     this.expireAfterAccess = expireAfterAccess;
-    return this;
+    return self();
   }
 
-  protected boolean isWeakKeys() {
-    return weakKeys;
-  }
-
-  /**
-   * Specifies that the cache should use weak references for keys.
-   *
-   * <p>Depending on the cache provider, this may not be supported and approximation techniques may
-   * be used.
-   *
-   * @return this {@code CacheBuilder} instance (for chaining)
-   */
-  public CacheBuilder<K, V> weakKeys() {
-    this.weakKeys = true;
-    return this;
-  }
-
-  protected boolean isWeakValues() {
-    return weakValues;
+  protected boolean isTenantAware() {
+    return tenantAware;
   }
 
   /**
-   * Specifies that the cache should use weak references for values.
+   * Disables data isolation per tenant. The cache will be shared globally across all tenants when
+   * multi-tenancy is active.
    *
-   * <p>Depending on the cache provider, this may not be supported and approximation techniques may
-   * be used.
+   * <p>By default, when multi-tenancy is active, the cache automatically segregates entries based
+   * on the current tenant context.
    *
    * @return this {@code CacheBuilder} instance (for chaining)
    */
-  public CacheBuilder<K, V> weakValues() {
-    this.weakValues = true;
-    return this;
+  public B nonTenantAware() {
+    this.tenantAware = false;
+    return self();
   }
 
   @SuppressWarnings("unchecked")
@@ -215,11 +201,12 @@ public abstract class CacheBuilder<K, V> {
    * @param removalListener the listener instance
    * @return this {@code CacheBuilder} instance (for chaining)
    */
-  public <K1 extends K, V1 extends V> CacheBuilder<K1, V1> removalListener(
-      RemovalListener<? super K1, ? super V1> removalListener) {
+  public <K1 extends K, V1 extends V, B1 extends CacheBuilder<K1, V1, B1>>
+      CacheBuilder<K1, V1, B1> removalListener(
+          RemovalListener<? super K1, ? super V1> removalListener) {
 
     @SuppressWarnings("unchecked")
-    var self = (CacheBuilder<K1, V1>) this;
+    var self = (CacheBuilder<K1, V1, B1>) this;
     self.removalListener = removalListener;
 
     return self;
@@ -232,7 +219,16 @@ public abstract class CacheBuilder<K, V> {
    * @param <V1> the value type of the cache
    * @return a new {@code AxelorCache} instance having the specified configuration
    */
-  public abstract <K1 extends K, V1 extends V> AxelorCache<K1, V1> build();
+  public final <K1 extends K, V1 extends V> AxelorCache<K1, V1> build() {
+    if (isTenantAware() && TenantModule.isEnabled()) {
+      return createTenantAwareCache(
+          tenant -> buildCache("%s:%s".formatted(tenant, getCacheName())));
+    } else {
+      return buildCache(getCacheName());
+    }
+  }
+
+  protected abstract <K1 extends K, V1 extends V> AxelorCache<K1, V1> buildCache(String name);
 
   /**
    * Builds an {@code AxelorCache} which either returns an already-loaded value for a given key or
@@ -244,6 +240,21 @@ public abstract class CacheBuilder<K, V> {
    * @return a new {@code AxelorCache} instance having the specified configuration and using the
    *     specified loader
    */
-  public abstract <K1 extends K, V1 extends V> AxelorCache<K1, V1> build(
-      CacheLoader<? super K1, V1> loader);
+  public final <K1 extends K, V1 extends V> AxelorCache<K1, V1> build(
+      CacheLoader<? super K1, V1> loader) {
+    if (isTenantAware() && TenantModule.isEnabled()) {
+      return createTenantAwareCache(
+          tenant -> buildCache("%s:%s".formatted(tenant, getCacheName()), loader));
+    } else {
+      return buildCache(getCacheName(), loader);
+    }
+  }
+
+  protected <K1 extends K, V1 extends V> TenantAwareCache<K1, V1> createTenantAwareCache(
+      Function<String, AxelorCache<K1, V1>> cacheFactory) {
+    return new TenantAwareCache<>(cacheFactory);
+  }
+
+  protected abstract <K1 extends K, V1 extends V> AxelorCache<K1, V1> buildCache(
+      String name, CacheLoader<? super K1, V1> loader);
 }

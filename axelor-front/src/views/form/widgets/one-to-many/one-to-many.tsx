@@ -17,13 +17,21 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useReducer,
   useRef,
   useState,
 } from "react";
 
-import { Box, Button, CommandBarProps, Panel, clsx } from "@axelor/ui";
+import {
+  Box,
+  Button,
+  CommandBarProps,
+  CommandItem,
+  Panel,
+  clsx,
+} from "@axelor/ui";
 import { GridColumnProps, GridRow, GridState } from "@axelor/ui/grid";
 import { MaterialIcon } from "@axelor/ui/icons/material-icon";
 
@@ -37,7 +45,9 @@ import {
   useEditor,
   useEditorInTab,
   useSelector,
+  isPopupMaximized,
 } from "@/hooks/use-relation";
+import { useSchemaTestId } from "@/hooks/use-testid";
 import { SearchOptions, SearchResult } from "@/services/client/data";
 import { DataStore } from "@/services/client/data-store";
 import { equals } from "@/services/client/data-utils";
@@ -97,8 +107,8 @@ import {
   nextId,
 } from "../../builder/utils";
 import { fetchRecord } from "../../form";
-import { DetailsForm } from "./one-to-many.details";
 import { usePanelClass } from "../panel";
+import { DetailsForm } from "./one-to-many.details";
 
 import styles from "./one-to-many.module.scss";
 
@@ -199,11 +209,13 @@ export function OneToMany(props: FieldProps<DataRecord[]>) {
   const { state, data } = useAsync(async () => {
     const { items, serverType } = schema;
     if ((items || []).length > 0) return;
+    const jsonModel = schema.jsonTarget || schema.jsonModel;
     const { view, ...res } =
       (await findView<GridView>({
         type: "grid",
         name: gridView,
         model,
+        jsonModel,
       })) || {};
     return {
       ...res,
@@ -300,6 +312,8 @@ function OneToManyInner({
     perms,
   } = schema;
 
+  const testId = useSchemaTestId(schema, "field");
+
   const refs = useRef<{
     reorder: boolean;
     recordsSync: boolean;
@@ -312,6 +326,7 @@ function OneToManyInner({
     lastSelectedIdsByServer: number[];
     serverSelectedIds: number[] | null;
     syncServerSelectionPending: boolean;
+    hasRefreshBeenCalled: boolean;
   }>({
     reorder: false,
     recordsSync: false,
@@ -321,6 +336,7 @@ function OneToManyInner({
     lastSelectedIdsByServer: [],
     serverSelectedIds: null,
     syncServerSelectionPending: false,
+    hasRefreshBeenCalled: false,
   });
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -507,12 +523,19 @@ function OneToManyInner({
                 .concat(newRecords);
             });
 
+            refs.current.hasRefreshBeenCalled = false;
+
             const result = await set(
               valueAtom,
               (refs.current.value = values),
               callOnChange,
               markDirty,
             );
+
+            // Check if a refresh was triggered during the onChange event.
+            // This can happen in scenarios where an action (e.g. save) is performed
+            // as part of the onChange handler. If so, exit early to avoid further updates.
+            if (refs.current.hasRefreshBeenCalled) return;
 
             const hasValueChanged =
               (result as unknown as ActionResult[])?.filter?.(
@@ -601,6 +624,11 @@ function OneToManyInner({
   }, [fields, model, schema, viewData]);
 
   const getContext = usePrepareWidgetContext(schema, formAtom, widgetAtom);
+
+  const editorId = useId();
+  const selectorId = useId();
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
   const showEditor = useEditor();
   const showEditorInTab = useEditorInTab(schema);
@@ -1131,15 +1159,19 @@ function OneToManyInner({
   );
 
   const getActionContext = useCallback(
-    () => ({
-      _viewType: "grid",
-      _views: [{ type: "grid", name: gridView }],
-      ...(refs.current.lastSelectedIds?.length > 0 && {
-        _ids: refs.current.lastSelectedIds,
-      }),
-      _parent: getContext(),
-    }),
-    [getContext, gridView],
+    () => {
+      const jsonModel = schema.jsonTarget || schema.jsonModel;
+      return {
+        _viewType: "grid",
+        _views: [{ type: "grid", name: gridView }],
+        ...(jsonModel && { jsonModel }),
+        ...(refs.current.lastSelectedIds?.length > 0 && {
+          _ids: refs.current.lastSelectedIds,
+        }),
+        _parent: getContext(),
+      };
+    },
+    [getContext, gridView, schema.jsonTarget, schema.jsonModel],
   );
 
   const actionView = useMemo(
@@ -1180,14 +1212,19 @@ function OneToManyInner({
     ) => {
       const { record } = options || {};
       const { id } = record ?? {};
+      const jsonModel = schema.jsonTarget || schema.jsonModel;
       if (showEditorInTab && (id ?? 0) > 0) {
         return showEditorInTab(record!, options?.readonly ?? false);
       }
+      setIsEditorOpen(true);
       showEditor({
+        id: editorId,
         title: title ?? "",
         model,
+        jsonModel,
         record: { id: null },
         readonly: false,
+        maximize: isPopupMaximized(schema, "editor"),
         viewName: formView,
         context: {
           _parent: getContext(),
@@ -1206,17 +1243,24 @@ function OneToManyInner({
                 }),
             }),
         ...options,
+        onClose: () => {
+          setIsEditorOpen(false);
+        },
       });
     },
     [
       showEditor,
       showEditorInTab,
+      editorId,
       title,
       model,
       formView,
+      schema,
       getContext,
       isManyToMany,
       isCollectionTree,
+      schema.jsonTarget,
+      schema.jsonModel,
     ],
   );
 
@@ -1341,9 +1385,12 @@ function OneToManyInner({
   const onSelect = useCallback(async () => {
     const _domain = await beforeSelect(domain, true);
     const _domainContext = _domain ? getContext() : {};
+    setIsSelectorOpen(true);
     showSelector({
+      id: selectorId,
       model,
       multiple: true,
+      maximize: isPopupMaximized(schema, "selector"),
       viewName: gridView,
       orderBy: orderBy,
       domain: _domain,
@@ -1353,15 +1400,20 @@ function OneToManyInner({
         onCreate: onAdd,
       }),
       onSelect: handleSelect,
+      onClose: () => {
+        setIsSelectorOpen(false);
+      },
     });
   }, [
     canNew,
     onAdd,
     showSelector,
+    selectorId,
     orderBy,
     model,
     gridView,
     domain,
+    schema,
     searchLimit,
     getContext,
     beforeSelect,
@@ -1452,10 +1504,12 @@ function OneToManyInner({
 
   const { data: detailMeta } = useAsync(async () => {
     if (!hasMasterDetails) return;
+    const jsonModel = schema.jsonTarget || schema.jsonModel;
     const meta = await findView<FormView>({
       type: "form",
       name: detailFormName,
       model,
+      jsonModel,
     });
     return (
       meta && {
@@ -1607,11 +1661,12 @@ function OneToManyInner({
     fetchAndSetDetailRecord(selected);
   }, [detailMeta, selected?.id, fetchAndSetDetailRecord]);
 
-  const onRefresh = useCallback(() => {
+  const onFormRefresh = useCallback(() => {
+    refs.current.hasRefreshBeenCalled = true;
     resetValue();
   }, [resetValue]);
 
-  useFormRefresh(onRefresh);
+  useFormRefresh(onFormRefresh);
 
   const onDiscard = useCallback(
     (record: DataRecord) => {
@@ -1881,12 +1936,14 @@ function OneToManyInner({
 
   const { data: expandableSummaryMeta } = useAsync(async () => {
     if (!isTreeGrid || !summaryView) return null;
+    const jsonModel = schema.jsonTarget || schema.jsonModel;
     return await findView<FormView>({
       type: "form",
       name: summaryView,
       model,
+      jsonModel,
     });
-  }, [isTreeGrid, summaryView, model]);
+  }, [isTreeGrid, summaryView, model, schema.jsonModel, schema.jsonTarget]);
 
   const gridStyle: CSSProperties = useMemo(
     () => ({
@@ -2002,6 +2059,13 @@ function OneToManyInner({
         },
         onClick: onSelect,
         hidden: !canSelect,
+        render: (commandProps) => (
+          <CommandItem
+            {...commandProps}
+            aria-haspopup="dialog"
+            aria-controls={isSelectorOpen ? selectorId : undefined}
+          />
+        ),
       },
       {
         key: "new",
@@ -2011,6 +2075,16 @@ function OneToManyInner({
         },
         onClick: editable ? onAddInGrid : onAdd,
         hidden: !canNew || Boolean(showSubTreeTitleIfEmpty),
+        render: (commandProps) => {
+          if (editable) return <CommandItem {...commandProps} />;
+          return (
+            <CommandItem
+              {...commandProps}
+              aria-haspopup="dialog"
+              aria-controls={isEditorOpen ? editorId : undefined}
+            />
+          );
+        },
       },
       {
         key: "edit",
@@ -2026,6 +2100,15 @@ function OneToManyInner({
           if (record) {
             onEdit(record);
           }
+        },
+        render: (commandProps) => {
+          return (
+            <CommandItem
+              {...commandProps}
+              aria-haspopup="dialog"
+              aria-controls={isEditorOpen ? editorId : undefined}
+            />
+          );
         },
       },
       {
@@ -2072,6 +2155,8 @@ function OneToManyInner({
       )}
       <Panel
         ref={panelRef}
+        data-testid={testId}
+        headerTitleClassName={styles.headerTitle}
         className={clsx(styles.container, panelClass, {
           [styles.tree]: isTreeGrid,
           [styles.subTree]: isSubTreeGrid,
@@ -2088,6 +2173,7 @@ function OneToManyInner({
           <ScopeProvider scope={MetaScope} value={viewMeta}>
             <GridComponent
               style={gridStyle}
+              data-testid="grid"
               className={clsx(styles["grid"], {
                 [styles["basic"]]: !hasMasterDetails,
                 [styles["no-rows"]]: !hasRows,

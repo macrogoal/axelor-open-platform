@@ -74,9 +74,6 @@ public class Entity implements BaseType<Entity> {
 
   @XmlTransient Property nameField;
 
-  @XmlAttribute(name = "sequential")
-  private Boolean sequential;
-
   @XmlAttribute(name = "jsonAttrs")
   private Boolean jsonAttrs;
 
@@ -103,6 +100,9 @@ public class Entity implements BaseType<Entity> {
   @XmlAttribute(name = "repository")
   private String repositoryType;
 
+  @XmlAttribute(name = "allocationSize")
+  private int allocationSize;
+
   private static final Logger logger = LoggerFactory.getLogger(Entity.class);
 
   @XmlElements({
@@ -116,6 +116,7 @@ public class Entity implements BaseType<Entity> {
     @XmlElement(name = "datetime", type = Property.DateTimeProperty.class),
     @XmlElement(name = "binary", type = Property.BinaryProperty.class),
     @XmlElement(name = "enum", type = Property.EnumProperty.class),
+    @XmlElement(name = "uuid", type = Property.UUIDProperty.class),
     @XmlElement(name = "one-to-one", type = Property.OneToOneProperty.class),
     @XmlElement(name = "many-to-one", type = Property.ManyToOneProperty.class),
     @XmlElement(name = "one-to-many", type = Property.OneToManyProperty.class),
@@ -203,7 +204,6 @@ public class Entity implements BaseType<Entity> {
     dynamicUpdate = getFields().stream().anyMatch(p -> p.isVirtual() && notTrue(p.getTransient()));
     nameField = getFields().stream().filter(p -> isTrue(p.getNameField())).findFirst().orElse(null);
 
-    sequential = notFalse(sequential);
     equalsAll = isTrue(equalsAll);
   }
 
@@ -267,6 +267,12 @@ public class Entity implements BaseType<Entity> {
         Stream.of(extraCode, other.extraCode)
             .filter(Utils::notBlank)
             .collect(Collectors.joining("\n"));
+
+    superInterfaces =
+        Stream.concat(stream(superInterfaces), stream(other.superInterfaces))
+            .distinct()
+            .filter(Utils::notBlank)
+            .collect(Collectors.joining(","));
   }
 
   private boolean merge(Property existing, Property property) {
@@ -392,16 +398,16 @@ public class Entity implements BaseType<Entity> {
     this.table = value;
   }
 
+  public int getAllocationSize() {
+    return allocationSize;
+  }
+
+  public void setAllocationSize(int allocationSize) {
+    this.allocationSize = allocationSize;
+  }
+
   public Property getNameField() {
     return nameField;
-  }
-
-  public Boolean getSequential() {
-    return sequential;
-  }
-
-  public void setSequential(Boolean sequential) {
-    this.sequential = sequential;
   }
 
   public Boolean getJsonAttrs() {

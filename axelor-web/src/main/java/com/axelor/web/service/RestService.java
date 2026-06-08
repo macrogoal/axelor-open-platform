@@ -34,6 +34,7 @@ import com.axelor.mail.db.MailMessage;
 import com.axelor.mail.db.repo.MailFollowerRepository;
 import com.axelor.mail.db.repo.MailMessageRepository;
 import com.axelor.mail.service.MailService;
+import com.axelor.meta.IllegalFileException;
 import com.axelor.meta.MetaFiles;
 import com.axelor.meta.MetaStore;
 import com.axelor.meta.db.MetaFile;
@@ -53,6 +54,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
@@ -68,6 +70,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.xml.bind.DatatypeConverter;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -387,25 +390,65 @@ public class RestService extends ResourceService {
     request.setModel(getModel());
     final Map<String, Object> data = request.getData();
 
-    final String originalFileName = String.valueOf(data.get("fileName"));
+    final String originalFileName =
+        data.get("fileName") != null ? String.valueOf(data.get("fileName")) : null;
     final String safeFileName = FileUtils.safeFileName(originalFileName);
-    final String fileType = String.valueOf(data.get("fileType"));
+    final String fileType =
+        data.get("fileType") != null ? String.valueOf(data.get("fileType")) : null;
 
-    // check if file name is valid
-    MetaFiles.checkPath(safeFileName);
-    MetaFiles.checkType(fileType);
+    try {
+      // check if file name is valid
+      if (StringUtils.notEmpty(safeFileName)) {
+        MetaFiles.checkPath(safeFileName);
+      }
+      if (StringUtils.notEmpty(fileType)) {
+        MetaFiles.checkType(fileType);
+      }
+    } catch (IllegalFileException e) {
+      return new Response().fail(e.getLocalizedMessage());
+    }
 
-    final InputPart filePart = formData.get("file").getFirst();
-    final InputPart fieldPart = formData.get("field").getFirst();
+    final List<InputPart> fileParts = formData.get("file");
+    final List<InputPart> fieldParts = formData.get("field");
     final boolean isAttachment = MetaFile.class.getName().equals(getModel());
-    final String field = fieldPart.getBodyAsString();
-    final InputStream fileStream = filePart.getBody(InputStream.class, null);
+
+    if (isEmpty(fileParts)) {
+      return fail();
+    }
 
     if (!isAttachment) {
-      ByteArrayOutputStream out = new ByteArrayOutputStream();
-      uploadSave(fileStream, out);
-      data.put(field, out.toByteArray());
+      if (fieldParts == null || fieldParts.size() != fileParts.size()) {
+        return fail();
+      }
+
+      for (int i = 0; i < fileParts.size(); ++i) {
+        final InputPart filePart = fileParts.get(i);
+        final InputStream fileStream = filePart.getBody(InputStream.class, null);
+        if (fileStream == null) {
+          return new Response().fail("file stream to upload is missing or empty");
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        uploadSave(fileStream, out);
+        final byte[] bytes = out.toByteArray();
+        try {
+          // check if file content is valid
+          MetaFiles.checkType(new ByteArrayInputStream(bytes));
+        } catch (IllegalFileException e) {
+          return new Response().fail(e.getLocalizedMessage());
+        }
+
+        final InputPart fieldPart = fieldParts.get(i);
+        final String field = fieldPart.getBodyAsString();
+        data.put(field, bytes);
+      }
       return getResource().save(request);
+    }
+
+    final InputPart filePart = fileParts.getFirst();
+    final InputStream fileStream = filePart.getBody(InputStream.class, null);
+    if (fileStream == null) {
+      return new Response().fail("file stream to upload is missing or empty");
     }
 
     data.put("fileName", safeFileName);
@@ -423,6 +466,13 @@ public class RestService extends ResourceService {
     entity.setFileType(metaFile.getFileType());
 
     File tmp = files.upload(fileStream, 0, -1, UUID.randomUUID().toString());
+    try {
+      // check if file content is valid
+      MetaFiles.checkType(tmp);
+    } catch (IllegalFileException e) {
+      Files.deleteIfExists(tmp.toPath());
+      return new Response().fail(e.getLocalizedMessage());
+    }
     final MetaFile updatedEntity = files.upload(tmp, entity);
     JPA.runInTransaction(() -> updatedEntity.setFileName(originalFileName));
 
@@ -471,34 +521,45 @@ public class RestService extends ResourceService {
       boolean checkOnly) {
 
     final Class klass = getResource().getModel();
-    final boolean permitted;
     final Mapper mapper = Mapper.of(klass);
-    final Model bean = JPA.find(klass, id);
 
     if (MetaFile.class.isAssignableFrom(klass)) {
-      permitted =
-          bean != null && Objects.equals(mapper.get(bean, "createdBy"), AuthUtils.getUser())
-              || checkMetaFileParentPermission(id, parentId, parentModel);
-    } else {
-      permitted = false;
+      final MetaFile metaFile = JPA.em().find(MetaFile.class, id);
+      if (!canDownload(klass, metaFile, id, parentId, parentModel)) {
+        return jakarta.ws.rs.core.Response.status(Status.FORBIDDEN).build();
+      }
+      if (metaFile == null) {
+        return jakarta.ws.rs.core.Response.status(Status.NOT_FOUND).build();
+      }
+      return download(metaFile, fileName, checkOnly);
     }
 
-    if (!permitted && !getResource().isPermitted(JpaSecurity.CAN_READ, id)) {
+    if (!canDownload(klass, null, id, parentId, parentModel)) {
       return jakarta.ws.rs.core.Response.status(Status.FORBIDDEN).build();
     }
 
-    if (bean == null) {
+    final Property prop = mapper.getProperty(field);
+    if (prop == null) {
       return jakarta.ws.rs.core.Response.status(Status.NOT_FOUND).build();
     }
 
-    if (bean instanceof MetaFile metaFile) {
-      return download(metaFile, fileName, checkOnly);
+    Object data;
+    try {
+      data =
+          JPA.em()
+              .createQuery(
+                  "SELECT e.%s FROM %s e WHERE e.id = :id"
+                      .formatted(prop.getName(), klass.getSimpleName()),
+                  Object.class)
+              .setParameter("id", id)
+              .getSingleResult();
+    } catch (NoResultException e) {
+      return jakarta.ws.rs.core.Response.status(Status.NOT_FOUND).build();
     }
 
     if (StringUtils.isBlank(fileName)) {
       fileName = getModel() + "_" + field;
     }
-    Object data = mapper.get(bean, field);
 
     if (data instanceof MetaFile metaFile) {
       return download(metaFile, fileName, checkOnly);
@@ -567,6 +628,21 @@ public class RestService extends ResourceService {
       throws IOException {
 
     return download(id, field, isImage, parentId, parentModel, fileName, false);
+  }
+
+  private boolean canDownload(
+      Class<?> klass, Model bean, Long id, Long parentId, String parentModel) {
+    if (getResource().isPermitted(JpaSecurity.CAN_READ, id)) {
+      return true;
+    }
+    if (!MetaFile.class.isAssignableFrom(klass)) {
+      return false;
+    }
+    final User user = AuthUtils.getUser();
+    return user != null
+            && bean != null
+            && Objects.equals(Mapper.of(klass).get(bean, "createdBy"), user)
+        || checkMetaFileParentPermission(id, parentId, parentModel);
   }
 
   private boolean checkMetaFileParentPermission(Long id, Long parentId, String parentModel) {
@@ -802,9 +878,10 @@ public class RestService extends ResourceService {
   public Response messageFollowers(@PathParam("id") long id) {
     final Class<? extends Model> entityClass = entityClass();
     Beans.get(JpaSecurity.class).check(JpaSecurity.CAN_READ, entityClass, id);
+    return followers(JPA.findReferenceById(entityClass, id));
+  }
 
-    final Repository<?> repo = JpaRepository.of(entityClass);
-    final Model entity = repo.find(id);
+  private Response followers(Model entity) {
     final Response response = new Response();
 
     final Object all = followers.findFollowers(entity);
@@ -822,20 +899,19 @@ public class RestService extends ResourceService {
     final Class<? extends Model> entityClass = entityClass();
     Beans.get(JpaSecurity.class).check(JpaSecurity.CAN_READ, entityClass, id);
 
-    final Repository<?> repo = JpaRepository.of(entityClass);
-    final Model entity = repo.find(id);
+    final Model entity = JPA.findReferenceById(entityClass, id);
 
     if (entity == null) {
-      return messageFollowers(id);
+      return followers(null);
     }
     if (request == null || request.getData() == null) {
       followers.follow(entity, AuthUtils.getUser());
-      return messageFollowers(id);
+      return followers(entity);
     }
 
     final MailMessage message = Mapper.toBean(MailMessage.class, request.getData());
     if (message == null || message.getRecipients() == null || message.getRecipients().isEmpty()) {
-      return messageFollowers(id);
+      return followers(entity);
     }
 
     for (MailAddress address : message.getRecipients()) {
@@ -851,7 +927,7 @@ public class RestService extends ResourceService {
       }
     }
 
-    return messageFollowers(id);
+    return followers(entity);
   }
 
   @POST
@@ -861,25 +937,23 @@ public class RestService extends ResourceService {
     final Class<? extends Model> entityClass = entityClass();
     Beans.get(JpaSecurity.class).check(JpaSecurity.CAN_READ, entityClass, id);
 
-    final Repository<?> repo = JpaRepository.of(entityClass);
-    final Model entity = repo.find(id);
+    final Model entity = JPA.findReferenceById(entityClass, id);
     if (entity == null) {
-      return messageFollowers(id);
+      return followers(null);
     }
 
     if (request == null || request.getRecords() == null || request.getRecords().isEmpty()) {
       followers.unfollow(entity, AuthUtils.getUser());
-      return messageFollowers(id);
-    }
-
-    for (Object item : request.getRecords()) {
-      final MailFollower follower = followers.find(Longs.tryParse(item.toString()));
-      if (follower != null) {
-        followers.unfollow(follower);
+    } else {
+      for (Object item : request.getRecords()) {
+        final MailFollower follower = followers.find(Longs.tryParse(item.toString()));
+        if (follower != null) {
+          followers.unfollow(follower);
+        }
       }
     }
 
-    return messageFollowers(id);
+    return followers(entity);
   }
 
   @POST

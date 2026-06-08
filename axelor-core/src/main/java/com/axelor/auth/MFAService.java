@@ -37,10 +37,13 @@ import java.security.SecureRandom;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.concurrent.locks.Lock;
@@ -107,22 +110,26 @@ public class MFAService {
   }
 
   public List<MFAMethod> getMethods(User user) {
-    return getMethods(getRelatedMfa(user));
+    return getMethods(mfaRepository.findSummaryByOwner(user));
   }
 
-  public List<MFAMethod> getMethods(MFA mfa) {
+  public List<MFAMethod> getMethods(MFASummaryDTO mfaDTO) {
     List<MFAMethod> methods = new ArrayList<>();
 
-    if (Boolean.TRUE.equals(mfa.getIsTotpValidated())) {
+    if (mfaDTO == null) {
+      return methods;
+    }
+
+    if (Boolean.TRUE.equals(mfaDTO.isTotpValidated())) {
       methods.add(MFAMethod.TOTP);
     }
 
-    if (Boolean.TRUE.equals(mfa.getIsEmailValidated())) {
+    if (Boolean.TRUE.equals(mfaDTO.isEmailValidated())) {
       methods.add(MFAMethod.EMAIL);
     }
 
     // Move default to first position
-    MFAMethod defaultMethod = mfa.getDefaultMethod();
+    MFAMethod defaultMethod = mfaDTO.defaultMethod();
     if (defaultMethod != null && methods.remove(defaultMethod)) {
       methods.add(0, defaultMethod);
     }
@@ -172,7 +179,7 @@ public class MFAService {
 
   private void updatedDefaultMethod(MFA mfa) {
     mfa.setDefaultMethod(null);
-    var methods = getMethods(mfa);
+    var methods = getMethods(MFASummaryDTO.from(mfa));
 
     if (methods.isEmpty()) {
       disableMFA(mfa);
@@ -484,12 +491,7 @@ public class MFAService {
 
   @Transactional
   public @Nullable MFA getRelatedMfa(User user, boolean create) {
-    MFA mfa =
-        mfaRepository
-            .all()
-            .filter("self.owner.id = :userId")
-            .bind("userId", user.getId())
-            .fetchOne();
+    MFA mfa = mfaRepository.findByOwner(user);
 
     if (mfa == null && create) {
       mfa = new MFA();
@@ -519,5 +521,36 @@ public class MFAService {
     }
 
     return codes.stream().collect(Collectors.joining(CODE_SEPARATOR));
+  }
+
+  public void processEmailMethod(
+      Map<String, Object> data, List<MFAMethod> mfaMethods, String username) {
+
+    if (mfaMethods.stream().noneMatch(method -> method == MFAMethod.EMAIL)) {
+      return;
+    }
+
+    User user = AuthUtils.getUser(username);
+    LocalDateTime emailRetryAfter = getEmailRetryAfter(user);
+    boolean isDefault = mfaMethods.get(0) == MFAMethod.EMAIL;
+
+    if (emailRetryAfter == null && isDefault) {
+      try {
+        emailRetryAfter = sendEmailCode(user);
+      } catch (Exception e) {
+        log.error("Failed to send MFA email for user %s".formatted(user.getCode()), e);
+      }
+    }
+
+    if (emailRetryAfter != null) {
+      data.put("emailRetryAfter", format(emailRetryAfter));
+    }
+  }
+
+  private String format(LocalDateTime localDateTime) {
+    return localDateTime
+        .atZone(ZoneId.systemDefault())
+        .withZoneSameInstant(ZoneOffset.UTC)
+        .toString();
   }
 }

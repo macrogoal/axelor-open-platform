@@ -4,7 +4,6 @@
  */
 package com.axelor.db.audit;
 
-import com.axelor.auth.AuditableRunner;
 import com.axelor.auth.AuthUtils;
 import com.axelor.auth.db.User;
 import java.util.Optional;
@@ -18,13 +17,15 @@ final class AuditUtils {
     return session
         .createQuery("SELECT self FROM User self WHERE self.code = :code", User.class)
         .setParameter("code", code)
-        .setHibernateFlushMode(FlushMode.MANUAL)
+        .setCacheable(true)
+        .setCacheRegion("audit.user.byCode")
         .setCacheMode(CacheMode.NORMAL)
+        .setHibernateFlushMode(FlushMode.MANUAL)
         .uniqueResult();
   }
 
   static User currentUser(SessionImplementor session) {
-    User user = AuditableRunner.batchUser();
+    User user = AuthUtils.getCurrentUser();
     if (user == null) {
       String code =
           Optional.ofNullable(AuthUtils.getSubject())

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <object-views xmlns="http://axelor.com/xml/ns/object-views"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://axelor.com/xml/ns/object-views https://axelor.com/xml/ns/object-views/object-views_8.0.xsd">
+  xsi:schemaLocation="http://axelor.com/xml/ns/object-views https://axelor.com/xml/ns/object-views/object-views_8.2.xsd">
 
   <form name="mfa-form" title="Multi-Factor Authentication" model="com.axelor.auth.db.MFA">
     <panel name="mainPanel">
@@ -28,8 +28,8 @@
       </panel>
     </panel>
     <panel name="methodsPanel" title="Multi-factor authentication methods" colSpan="12" showIf="enabled">
-      <field name="defaultMethod" hidden="true" colSpan="12" />
-      <field name="isTotpValidated" showTitle="false">
+      <field name="defaultMethod" hidden="true" colSpan="12" x-dirty="false"/>
+      <field name="isTotpValidated" showTitle="false" x-dirty="false">
         <viewer><![CDATA[
             <>
               <Box d="flex" alignItems="center" justifyContent="center" p={2} mb={2} gap="4">
@@ -75,7 +75,7 @@
           ]]>
           </viewer>
       </field>
-      <field name="isEmailValidated" showTitle="false">
+      <field name="isEmailValidated" showTitle="false" x-dirty="false">
         <viewer><![CDATA[
             <>
               <Box d="flex" alignItems="center" justifyContent="center" p={2} mb={2} gap="4">

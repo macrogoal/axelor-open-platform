@@ -42,7 +42,7 @@ public class AxelorFormClient extends FormClient {
       setLoginUrl(LOGIN_URL);
       setAuthenticatorIfUndefined(authPac4jInfo.getAuthenticator());
       setCredentialsExtractor(Beans.get(FormExtractor.class));
-      setUrlResolver(new AxelorUrlResolver());
+      setUrlResolver(Beans.get(AxelorUrlResolver.class));
     }
 
     super.internalInit(forceReinit);
@@ -84,14 +84,11 @@ public class AxelorFormClient extends FormClient {
         .getRequestParameter("tenantId")
         .ifPresent(tenantId -> sessionStore.set(context, "tenantId", tenantId));
 
-    final AuthService authService = AuthService.getInstance();
-
     try {
       context.setResponseContentType(HttpConstants.APPLICATION_JSON + "; charset=utf-8");
 
-      final Map<String, String> state = new HashMap<>();
-      state.put("passwordPattern", authService.getPasswordPattern());
-      state.put("passwordPatternTitle", authService.getPasswordPatternTitle());
+      final Map<String, Object> state = new HashMap<>();
+      state.put("passwordRequirements", AuthService.getInstance().getPasswordPolicyDescriptions());
       if (StringUtils.notBlank(errorMessage)) {
         state.put(ERROR_PARAMETER, I18n.get(errorMessage));
       }
@@ -104,7 +101,7 @@ public class AxelorFormClient extends FormClient {
       logger.error(e.getMessage(), e);
     }
 
-    throw handleInvalidCredentials(ctx, username, exception);
+    throw handleInvalidCredentials(ctx, username, new CredentialsException(exception));
   }
 
   private HttpAction handleInvalidCredentials(

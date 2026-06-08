@@ -1,10 +1,11 @@
-import legacy from "@vitejs/plugin-legacy";
 import react from "@vitejs/plugin-react";
-import path from "path";
-import fs from "fs";
-import crypto from "crypto";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig } from "vite";
 import svgr from "vite-plugin-svgr";
+
 import monacoPkg from "monaco-editor/package.json" with { type: "json" };
 
 const monacoHash = crypto
@@ -13,10 +14,9 @@ const monacoHash = crypto
   .digest()
   .toString("base64url")
   .slice(0, 8);
-const monacoPath = `assets/monaco-${monacoHash}`;
+const monacoPath = `assets/monaco-${monacoHash}/vs`;
 const monacoNodePath = "node_modules/monaco-editor/min/vs";
 
-// https://vitejs.dev/config/
 export default defineConfig({
   base: "./",
   plugins: [
@@ -26,19 +26,21 @@ export default defineConfig({
         icon: true,
       },
     }),
-    legacy({
-      modernPolyfills: true,
-      renderLegacyChunks: false,
-    }),
     {
       name: "monaco-hash",
       writeBundle() {
         const sourceDir = path.resolve(__dirname, monacoNodePath);
         const targetDir = `dist/${monacoPath}`;
+        fs.mkdirSync(path.dirname(targetDir));
         fs.symlinkSync(sourceDir, targetDir, "dir");
       },
     },
-  ],
+    process.env.VITE_VISUALIZER === "true" && visualizer({
+      emitFile: true,
+      // to generate json output
+      //template: "raw-data"
+    }),
+  ].filter(Boolean),
   define: {
     "import.meta.env.MONACO_PATH": JSON.stringify(
       process.env.NODE_ENV === "production" ? monacoPath : monacoNodePath,
@@ -50,6 +52,14 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: "react",
+        replacement: path.resolve(__dirname, "./node_modules/react"),
+      },
+      {
+        find: "react-dom",
+        replacement: path.resolve(__dirname, "./node_modules/react-dom"),
+      },
+      {
         find: /^~(.*)/,
         replacement: "$1",
       },
@@ -58,8 +68,31 @@ export default defineConfig({
         replacement: path.join(__dirname, "src", "$1"),
       },
     ],
+    dedupe: ["react", "react-dom"],
   },
   build: {
+    /**
+     * Browser Compatibility (ES2022):
+     *
+     *  ┌──────────────┬──────────────────┬───────────────────┐
+     *  │ Browser      │ Minimum Version  │ Release Date      │
+     *  ├──────────────┼──────────────────┼───────────────────┤
+     *  │ Chrome       │ 105+             │ August 2022       │
+     *  │ Edge         │ 105+             │ September 2022    │
+     *  │ Firefox      │ 104+             │ August 2022       │
+     *  │ Safari       │ 16.4+            │ March 2023        │
+     *  │ Opera        │ 91+              │ September 2022    │
+     *  └──────────────┴──────────────────┴───────────────────┘
+     */
     target: ["es2022"],
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes("@babel+standalone")) {
+            return "babel";
+          }
+        },
+      },
+    },
   },
 });

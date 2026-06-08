@@ -43,7 +43,7 @@ const TextField = forwardRef<
 });
 
 function DateField(props: ComponentProps<typeof DateComponent>) {
-  const schema = useRef({ type: "date" }).current;
+  const schema = useMemo(() => ({ type: "date" }), []);
   return <DateComponent trapFocus {...props} schema={schema} />;
 }
 
@@ -165,6 +165,8 @@ function RelationalSelectWidget({
     target,
     targetName,
     targetSearch,
+    jsonModel,
+    jsonTarget,
     gridView,
     searchLimit,
     domain,
@@ -200,6 +202,7 @@ function RelationalSelectWidget({
   const showSelect = useCallback(() => {
     showSelector({
       model: target,
+      jsonModel: jsonTarget || jsonModel,
       viewName: gridView,
       orderBy: sortBy,
       multiple,
@@ -214,10 +217,12 @@ function RelationalSelectWidget({
     });
   }, [
     showSelector,
-    multiple,
     target,
+    jsonTarget,
+    jsonModel,
     gridView,
     sortBy,
+    multiple,
     searchLimit,
     domain,
     onChange,
@@ -292,7 +297,13 @@ export function BooleanRadio({
   onChange: ChangeEventHandler<HTMLInputElement>;
 }) {
   return (
-    <Box d="flex" alignItems="center" ms={1} me={1}>
+    <Box
+      d="flex"
+      alignItems="center"
+      ms={1}
+      me={1}
+      data-testid={"editor-operator"}
+    >
       {options.map(({ value, label }, index: number) => (
         <Box as="label" d="flex" alignItems="center" key={index} me={2}>
           <Input

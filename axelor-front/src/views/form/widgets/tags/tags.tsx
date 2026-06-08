@@ -2,10 +2,10 @@ import { useAtom, useAtomValue } from "jotai";
 import { selectAtom } from "jotai/utils";
 import getObjValue from "lodash/get";
 import isEqual from "lodash/isEqual";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { SelectRefHandler } from "@axelor/ui";
 
-import { RelationalTag } from "@/components/tag";
+import { RelationalTag, TagList } from "@/components/tag";
 import { Select, SelectOptionProps, SelectValue } from "@/components/select";
 import { useAsyncEffect } from "@/hooks/use-async-effect";
 import {
@@ -15,6 +15,7 @@ import {
   useEditor,
   useEditorInTab,
   useSelector,
+  isPopupMaximized,
 } from "@/hooks/use-relation";
 import { useOptionLabel } from "../many-to-one/utils";
 import { DataSource } from "@/services/client/data";
@@ -62,6 +63,8 @@ export function Tags(props: FieldProps<any>) {
     useMemo(() => selectAtom(formAtom, (form) => form.model), [formAtom]),
   );
 
+  const id = useId();
+  
   const selectRef = useRef<SelectRefHandler>(null);
   const valueRef = useRef<DataRecord[]>([]);
   const { attrs } = useAtomValue(widgetAtom);
@@ -210,6 +213,7 @@ export function Tags(props: FieldProps<any>) {
         viewName: formView,
         record,
         readonly: readonly || !canEdit,
+        maximize: isPopupMaximized(schema, "editor"),
         context: {
           _parent: getContext(),
         },
@@ -224,6 +228,7 @@ export function Tags(props: FieldProps<any>) {
       formView,
       readonly,
       canEdit,
+      schema,
       getContext,
       handleSelect,
     ],
@@ -262,6 +267,7 @@ export function Tags(props: FieldProps<any>) {
       viewName: gridView,
       orderBy: sortBy,
       multiple: true,
+      maximize: isPopupMaximized(schema, "selector"),
       domain: _domain,
       context: _domainContext,
       limit: searchLimit,
@@ -284,6 +290,7 @@ export function Tags(props: FieldProps<any>) {
     target,
     gridView,
     sortBy,
+    schema,
     searchLimit,
     value,
     handleChange,
@@ -340,13 +347,29 @@ export function Tags(props: FieldProps<any>) {
   );
 
   useAsyncEffect(ensureRelatedValues, [ensureRelatedValues]);
+  
+  if (readonly && schema.inGridEditor) {
+    const items = ready ? (value ?? []) : [];
+    return (
+      <FieldControl {...props} inputId={id}>
+        <TagList
+          items={items}
+          schema={schema}
+          onClick={canView ? handleEdit : undefined}
+        />
+      </FieldControl>
+    );
+  }
 
   return (
-    <FieldControl {...props}>
+    <FieldControl {...props} inputId={id}>
       <Select
+        id={id}
+        data-testid="input"
         autoFocus={focus}
         multiple={true}
         readOnly={readonly}
+        disabled={readonly}
         required={required}
         invalid={invalid}
         canSelect={canSelect}

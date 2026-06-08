@@ -7,7 +7,9 @@ package com.axelor.cache.redisson;
 import com.axelor.cache.AxelorCache;
 import com.axelor.cache.CacheBuilder;
 import com.axelor.cache.CacheLoader;
-import java.time.Duration;
+import com.axelor.cache.TenantAwareCache;
+import com.axelor.cache.TenantAwareDistributedCache;
+import java.util.function.Function;
 import org.redisson.api.RMap;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.options.ExMapOptions;
@@ -15,31 +17,32 @@ import org.redisson.api.options.ExMapOptions;
 /*
  * Abstract Redisson cache builder
  *
- * <p>Weak references are not supported in Redisson collections. When either {@code weakKeys} or
- * {@code weakValues} are used, TTL is set in order to approximate the behavior.
- *
  * @param <K> the type of keys maintained by this cache
  * @param <V> the type of mapped values
  * @param <M> the type of Redisson map
  * @param <O> the type of Redisson map options
  */
 public abstract class AbstractRedissonCacheBuilder<
-        K, V, M extends RMap<K, V>, O extends ExMapOptions<?, K, V>>
-    extends CacheBuilder<K, V> {
+        K,
+        V,
+        B extends AbstractRedissonCacheBuilder<K, V, B, M, O>,
+        M extends RMap<K, V>,
+        O extends ExMapOptions<?, K, V>>
+    extends CacheBuilder<K, V, B> {
 
   protected static final String PREFIX = "axelor-cache:";
 
   protected AbstractRedissonCacheBuilder(String cacheName) {
-    super(PREFIX + cacheName);
+    super(cacheName);
   }
 
-  protected AbstractRedissonCacheBuilder(CacheBuilder<K, V> builder) {
+  protected AbstractRedissonCacheBuilder(CacheBuilder<K, V, ?> builder) {
     super(builder);
   }
 
   @Override
-  public <K1 extends K, V1 extends V> AxelorCache<K1, V1> build() {
-    var cache = newMapCache();
+  public <K1 extends K, V1 extends V> AxelorCache<K1, V1> buildCache(String name) {
+    var cache = newMapCache(name);
 
     @SuppressWarnings("unchecked")
     var redissonCache = (AxelorCache<K1, V1>) newConfiguredCache(cache);
@@ -48,9 +51,9 @@ public abstract class AbstractRedissonCacheBuilder<
   }
 
   @Override
-  public <K1 extends K, V1 extends V> AxelorCache<K1, V1> build(
-      CacheLoader<? super K1, V1> loader) {
-    var cache = newMapCache(loader);
+  public <K1 extends K, V1 extends V> AxelorCache<K1, V1> buildCache(
+      String name, CacheLoader<? super K1, V1> loader) {
+    var cache = newMapCache(name, loader);
 
     @SuppressWarnings("unchecked")
     var redissonCache = (AxelorCache<K1, V1>) newConfiguredCache(cache);
@@ -58,14 +61,24 @@ public abstract class AbstractRedissonCacheBuilder<
     return redissonCache;
   }
 
-  protected abstract O newOptions();
+  @Override
+  protected <K1 extends K, V1 extends V> TenantAwareCache<K1, V1> createTenantAwareCache(
+      Function<String, AxelorCache<K1, V1>> cacheFactory) {
+    return new TenantAwareDistributedCache<>(cacheFactory);
+  }
+
+  private O newPrefixedOptions(String name) {
+    return newOptions(PREFIX + name);
+  }
+
+  protected abstract O newOptions(String name);
 
   protected abstract M newMapCache(O options);
 
   protected abstract AbstractRedissonCache<K, V, M> newRedissonCache(M cache);
 
-  private M newMapCache() {
-    return newMapCache(newOptions());
+  private M newMapCache(String name) {
+    return newMapCache(newPrefixedOptions(name));
   }
 
   private <K1 extends K, V1 extends V> MapLoader<K, V> newMapLoader(
@@ -84,8 +97,9 @@ public abstract class AbstractRedissonCacheBuilder<
     };
   }
 
-  private <K1 extends K, V1 extends V> M newMapCache(CacheLoader<? super K1, V1> loader) {
-    var options = newOptions();
+  private <K1 extends K, V1 extends V> M newMapCache(
+      String name, CacheLoader<? super K1, V1> loader) {
+    var options = newPrefixedOptions(name);
     options.loader(newMapLoader(loader));
     return newMapCache(options);
   }
@@ -98,12 +112,6 @@ public abstract class AbstractRedissonCacheBuilder<
 
   protected void configureCache(AbstractRedissonCache<K, V, M> cache) {
     var expireAfterWrite = getExpireAfterWrite();
-
-    // No weak references in Redisson collections
-    // Setting TTL most closely approximates the behavior
-    if ((isWeakKeys() || isWeakValues()) && expireAfterWrite == null) {
-      expireAfterWrite = Duration.ofHours(1);
-    }
 
     if (expireAfterWrite != null) {
       cache.setExpireAfterWrite(expireAfterWrite);

@@ -232,6 +232,10 @@ public class I18nExtractor {
             public void endElement(String uri, String localName, String qName) throws SAXException {
               if (TEXT_NODES.contains(qName)) {
                 String text = StringUtils.stripIndent(readTextLines.toString());
+                // Match unmarshalled text for static and help
+                if (List.of("static", "help").contains(qName)) {
+                  text = text.trim();
+                }
                 accept(new I18nItem(text, file, locator.getLineNumber()));
                 readText = false;
                 readTextLines.setLength(0);
@@ -532,6 +536,9 @@ public class I18nExtractor {
         for (int i = 0; i < line.length; i++) {
           if (StringUtils.isBlank(line[i])) {
             line[i] = null;
+          } else {
+            // Use CRLF also for cell content
+            line[i] = line[i].replaceAll("(?<!\r)\n", "\r\n");
           }
         }
       }

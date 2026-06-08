@@ -4,6 +4,13 @@
  */
 package com.axelor.app;
 
+import com.axelor.auth.password.policy.DigitsPasswordPolicy;
+import com.axelor.auth.password.policy.LengthPasswordPolicy;
+import com.axelor.auth.password.policy.LowerCasePasswordPolicy;
+import com.axelor.auth.password.policy.PatternPasswordPolicy;
+import com.axelor.auth.password.policy.ScorePasswordPolicy;
+import com.axelor.auth.password.policy.SpecialCharsPasswordPolicy;
+import com.axelor.auth.password.policy.UpperCasePasswordPolicy;
 import org.hibernate.cache.jcache.ConfigSettings;
 import org.hibernate.cfg.CacheSettings;
 
@@ -37,6 +44,17 @@ public interface AvailableAppSettings {
 
   String APPLICATION_SCRIPT_CACHE_SIZE = "application.script.cache.size";
   String APPLICATION_SCRIPT_CACHE_EXPIRE_TIME = "application.script.cache.expire-time";
+  String APPLICATION_SCRIPT_TIMEOUT = "application.script.timeout";
+
+  String AUDIT_LOGS_FLUSH_THRESHOLD = "application.audit.logs.flush-threshold";
+  String AUDIT_LOGS_MAX_RETRY = "application.audit.logs.max-retry";
+  String AUDIT_PROCESSOR_BATCH_DELAY = "application.audit.processor.batch-delay";
+  String AUDIT_PROCESSOR_ACTIVITY_WINDOW = "application.audit.processor.activity-window";
+  String AUDIT_PROCESSOR_BUSY_BACKOFF_INTERVAL =
+      "application.audit.processor.busy-backoff-interval";
+  String AUDIT_PROCESSOR_BUSY_BACKOFF_MAX_RETRIES =
+      "application.audit.processor.busy-backoff-max-retries";
+  String AUDIT_PROCESSOR_BATCH_SIZE = "application.audit.processor.batch-size";
 
   String APPLICATION_DOMAIN_BLOCKLIST_PATTERN = "application.domain-blocklist-pattern";
 
@@ -66,6 +84,10 @@ public interface AvailableAppSettings {
   String APPLICATION_CACHE_SHIRO_CONFIG_PREFIX = "application.cache.shiro.config.";
   String APPLICATION_CACHE_SHIRO_CONFIG_PATH = APPLICATION_CACHE_SHIRO_CONFIG_PREFIX + "path";
 
+  String APPLICATION_ENTITY_SEQUENCE_PATH = "application.entity.sequence.";
+  String APPLICATION_ENTITY_SEQUENCE_GLOBAL_DEFAULT_ALLOCATION_SIZE =
+      APPLICATION_ENTITY_SEQUENCE_PATH + "default_allocation_size";
+
   String VIEW_SINGLE_TAB = "view.single-tab";
   String VIEW_TABS_MAX = "view.max-tabs";
   String VIEW_CUSTOMIZATION = "view.allow-customization";
@@ -94,6 +116,7 @@ public interface AvailableAppSettings {
 
   String TEMPLATE_SEARCH_DIR = "template.search-dir";
 
+  String DATA_STORE_PROVIDER = "data.store.provider";
   String DATA_UPLOAD_DIR = "data.upload.dir";
   String DATA_UPLOAD_TEMP_DIR = "data.upload.temp-dir";
   String FILE_UPLOAD_SIZE = "data.upload.max-size";
@@ -151,8 +174,14 @@ public interface AvailableAppSettings {
   String QUARTZ_JOB_STORE_CLASS = QUARTZ_JOB_STORE_PREFIX + "class";
   String QUARTZ_DATA_SOURCE_PREFIX = "quartz.data-source.";
 
-  String USER_PASSWORD_PATTERN = "user.password.pattern";
-  String USER_PASSWORD_PATTERN_TITLE = /*$$(*/ "user.password.pattern-title" /*)*/;
+  String USER_PASSWORD_LENGTH_MIN = "user.password." + LengthPasswordPolicy.ID + ".min";
+  String USER_PASSWORD_DIGITS_MIN = "user.password." + DigitsPasswordPolicy.ID + ".min";
+  String USER_PASSWORD_LOWER_CASE_MIN = "user.password." + LowerCasePasswordPolicy.ID + ".min";
+  String USER_PASSWORD_UPPER_CASE_MIN = "user.password." + UpperCasePasswordPolicy.ID + ".min";
+  String USER_PASSWORD_SPECIAL_CHARS_MIN =
+      "user.password." + SpecialCharsPasswordPolicy.ID + ".min";
+  String USER_PASSWORD_PATTERN_VALUE = "user.password." + PatternPasswordPolicy.ID + ".value";
+  String USER_PASSWORD_SCORE_MIN = "user.password." + ScorePasswordPolicy.ID + ".min";
 
   String ENCRYPTION_ALGORITHM = "encryption.algorithm";
   String ENCRYPTION_PASSWORD = "encryption.password";
@@ -220,9 +249,11 @@ public interface AvailableAppSettings {
   String AUTH_LDAP_USER_DN_FORMAT = "auth.ldap.user.dn-format";
   String AUTH_LDAP_USER_ID_ATTRIBUTE = "auth.ldap.user.id-attribute";
   String AUTH_LDAP_USER_USERNAME_ATTRIBUTE = "auth.ldap.user.username-attribute";
+  String AUTH_LDAP_USER_SEARCH_SUBTREE = "auth.ldap.user.search.subtree";
 
   String AUTH_LDAP_GROUP_BASE = "auth.ldap.group.base";
   String AUTH_LDAP_GROUP_FILTER = "auth.ldap.group.filter";
+  String AUTH_LDAP_GROUP_SEARCH_SUBTREE = "auth.ldap.group.search.subtree";
 
   String AUTH_LDAP_SERVER_SSL_TRUST_STORE_PATH = "auth.ldap.server.ssl.trust-store.path";
   String AUTH_LDAP_SERVER_SSL_TRUST_STORE_PASSWORD = "auth.ldap.server.ssl.trust-store.password";

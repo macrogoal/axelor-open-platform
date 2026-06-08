@@ -13,7 +13,9 @@ import com.axelor.auth.AuthSecurityException;
 import com.axelor.auth.AuthSecurityWarner;
 import com.axelor.auth.AuthService;
 import com.axelor.auth.AuthUtils;
+import com.axelor.auth.db.MFA;
 import com.axelor.auth.db.User;
+import com.axelor.auth.db.UserToken;
 import com.axelor.common.Inflector;
 import com.axelor.common.ObjectUtils;
 import com.axelor.common.StringUtils;
@@ -61,7 +63,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.validation.ValidationException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -115,6 +116,19 @@ public class Resource<T extends Model> {
   private final Event<PostRequest> postRequest;
 
   private static final Pattern NAME_PATTERN = Pattern.compile("[\\w\\.]+");
+
+  private static final Set<String> USER_RESTRICTED_FIELDS =
+      Set.of(
+          "code",
+          "group",
+          "blocked",
+          "activateOn",
+          "expiresOn",
+          "password",
+          "passwordUpdatedOn",
+          "roles",
+          "permissions",
+          "metaPermissions");
 
   private static JpaSecurity securityWarner;
 
@@ -247,6 +261,12 @@ public class Resource<T extends Model> {
 
   public Response perms(Long id) {
     Set<JpaSecurity.AccessType> perms = security.get().getAccessTypes(model, id);
+    try {
+      checkSpecialModel(model, new Long[] {id}, AccessType.READ);
+    } catch (UnauthorizedException e) {
+      perms = new HashSet<>();
+    }
+
     Response response = new Response();
 
     response.setData(perms);
@@ -267,6 +287,7 @@ public class Resource<T extends Model> {
 
     try {
       sec.check(type, model, ids);
+      checkSpecialModel(model, ids, AccessType.READ);
       response.setStatus(Response.STATUS_SUCCESS);
     } catch (Exception e) {
       response.addError(perm, e.getMessage());
@@ -437,6 +458,14 @@ public class Resource<T extends Model> {
       security.get().check(JpaSecurity.CAN_READ, model);
     }
 
+    User currentUser = AuthUtils.getUser();
+    if ((MFA.class.isAssignableFrom(model) || UserToken.class.isAssignableFrom(model))
+        && currentUser != null
+        && !AuthUtils.isAdmin(currentUser)) {
+      Filter specialModelFilters = new JPQLFilter("self.owner.id = ?", currentUser.getId());
+      filter = filter == null ? specialModelFilters : Filter.and(filter, specialModelFilters);
+    }
+
     if (LOG.isTraceEnabled()) {
       LOG.trace("Searching '{}' with {}", model.getCanonicalName(), request.getData());
     } else {
@@ -556,23 +585,66 @@ public class Resource<T extends Model> {
               throw new IllegalArgumentException("Invalid name: %s".formatted(name));
             });
 
-    builder
-        .append("SELECT new map(_parent.id as id, count(self.id) as count) FROM ")
-        .append(modelName)
-        .append(" self ")
-        .append("LEFT JOIN self.")
-        .append(parentName)
-        .append(" AS _parent ")
-        .append("WHERE _parent.id IN (:ids) GROUP BY _parent");
+    // Check if parent field is a JSON custom field (e.g., attrs.parent)
+    var isJsonParent = false;
+    var dotIndex = parentName.indexOf('.');
+    if (dotIndex > 0) {
+      try {
+        var modelClass = Class.forName(modelName);
+        var mapper = Mapper.of(modelClass);
+        var baseProp = mapper.getProperty(parentName.substring(0, dotIndex));
+        isJsonParent = baseProp != null && baseProp.isJson();
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException("Invalid model: " + modelName, e);
+      }
+    }
 
-    jakarta.persistence.Query q = JPA.em().createQuery(builder.toString());
-    q.setParameter("ids", ids);
+    if (isJsonParent) {
+      var jsonField = parentName.substring(0, dotIndex);
+      var jsonPath = parentName.substring(dotIndex + 1);
+      // JSON many-to-one references store values as {"id": N, ...},
+      // so extract the nested "id" to match against parent IDs
+      var jsonExtract = "json_extract_text(self." + jsonField + ", '" + jsonPath + "', 'id')";
+      builder
+          .append("SELECT new map(")
+          .append(jsonExtract)
+          .append(" as id, count(self.id) as count) FROM ")
+          .append(modelName)
+          .append(" self ")
+          .append("WHERE ")
+          .append(jsonExtract)
+          .append(" IN (:ids) GROUP BY ")
+          .append(jsonExtract);
+    } else {
+      builder
+          .append("SELECT new map(_parent.id as id, count(self.id) as count) FROM ")
+          .append(modelName)
+          .append(" self ")
+          .append("LEFT JOIN self.")
+          .append(parentName)
+          .append(" AS _parent ")
+          .append("WHERE _parent.id IN (:ids) GROUP BY _parent");
+    }
+
+    var q = JPA.em().createQuery(builder.toString());
+    var paramIds =
+        isJsonParent ? ids.stream().map(id -> id == null ? null : id.toString()).toList() : ids;
+
+    q.setParameter("ids", paramIds);
 
     QueryBinder.of(q).setReadOnly();
 
     Map counts = new HashMap<>();
     for (Object item : q.getResultList()) {
-      counts.put(((Map) item).get("id"), ((Map) item).get("count"));
+      Object id = ((Map) item).get("id");
+      if (isJsonParent && id instanceof String sid) {
+        try {
+          id = Long.valueOf(sid);
+        } catch (NumberFormatException e) {
+          // keep as string
+        }
+      }
+      counts.put(id, ((Map) item).get("count"));
     }
 
     for (Object item : result) {
@@ -608,6 +680,11 @@ public class Resource<T extends Model> {
   public Response export(Request request, Charset charset, Locale locale, char separator) {
     security.get().check(JpaSecurity.CAN_READ, model);
     security.get().check(JpaSecurity.CAN_EXPORT, model);
+
+    if (MFA.class.isAssignableFrom(model) || UserToken.class.isAssignableFrom(model)) {
+      final AuthSecurityException cause = new AuthSecurityException(AccessType.EXPORT, model);
+      throw new UnauthorizedException(cause.getMessage(), cause);
+    }
 
     if (LOG.isTraceEnabled()) {
       LOG.trace("Exporting '{}' with {}", model.getName(), request.getData());
@@ -988,6 +1065,9 @@ public class Resource<T extends Model> {
 
     final Repository<?> repository = JpaRepository.of(model);
     final Model entity = repository.find(id);
+
+    checkSpecialAllow(entity, AccessType.READ);
+
     if (entity != null) {
       data.add(repository.populate(toMap(entity, request), request.getContext()));
     }
@@ -1013,6 +1093,8 @@ public class Resource<T extends Model> {
     if (entity == null) {
       throw new OptimisticLockException(new StaleObjectStateException(model.getName(), id));
     }
+
+    checkSpecialAllow(entity, AccessType.READ);
 
     final List<Object> data = new ArrayList<>();
 
@@ -1200,34 +1282,51 @@ public class Resource<T extends Model> {
     return response;
   }
 
-  private User changeUserPassword(User user, Map<String, Object> values) {
-    final String oldPassword = (String) values.get("oldPassword");
-    final String newPassword = (String) values.get("newPassword");
-    final String chkPassword = (String) values.get("chkPassword");
+  /**
+   * Handles User-specific save logic with restricted field enforcement for non-admins.
+   *
+   * <p>Non-admin users are rejected if they attempt to modify restricted fields on any user record.
+   */
+  private void handleUserSave(User user, Map<String, Object> values) {
+    final User currentUser = AuthUtils.getUser();
 
-    // no password change
-    if (StringUtils.isBlank(newPassword)) {
-      return user;
+    if (currentUser != null && !AuthUtils.isAdmin(currentUser)) {
+      enforceRestrictedFields(values);
     }
 
-    if (StringUtils.isBlank(oldPassword)) {
-      throw new ValidationException("Current user password is not provided.");
+    final String password = (String) values.get("password");
+    if (StringUtils.notBlank(password)) {
+      AuthService.getInstance().changePassword(user, password);
+    }
+  }
+
+  /**
+   * Handles User-specific mass update logic.
+   *
+   * <p>Non-admin users are rejected if they attempt to modify restricted fields on any user record.
+   */
+  private void handleUserMassUpdate(Map<String, Object> values) {
+    final User currentUser = AuthUtils.getUser();
+
+    if (currentUser != null && !AuthUtils.isAdmin(currentUser)) {
+      enforceRestrictedFields(values);
     }
 
-    if (!newPassword.equals(chkPassword)) {
-      throw new ValidationException("Confirm password doesn't match with new password.");
+    // Never allow mass update password
+    if (values.containsKey("password")) {
+      final AuthSecurityException cause = new AuthSecurityException(AccessType.WRITE, model);
+      throw new UnauthorizedException(cause.getMessage(), cause);
     }
+  }
 
-    final User current = AuthUtils.getUser();
-    final AuthService authService = AuthService.getInstance();
-
-    if (!authService.match(oldPassword, current.getPassword())) {
-      throw new ValidationException("Current user password is wrong.");
+  /** Throws an error if a non-admin user attempts to modify restricted fields on a user record. */
+  private void enforceRestrictedFields(Map<String, Object> values) {
+    for (String field : USER_RESTRICTED_FIELDS) {
+      if (values.containsKey(field)) {
+        final AuthSecurityException cause = new AuthSecurityException(AccessType.WRITE, model);
+        throw new UnauthorizedException(cause.getMessage(), cause);
+      }
     }
-
-    authService.changePassword(user, newPassword);
-
-    return user;
   }
 
   @SuppressWarnings("all")
@@ -1235,6 +1334,11 @@ public class Resource<T extends Model> {
 
     final Response response = new Response();
     final Repository repository = JpaRepository.of(model);
+
+    if (MFA.class.isAssignableFrom(model) || UserToken.class.isAssignableFrom(model)) {
+      final AuthSecurityException cause = new AuthSecurityException(AccessType.WRITE, model);
+      throw new UnauthorizedException(cause.getMessage(), cause);
+    }
 
     final List<Object> records;
 
@@ -1291,9 +1395,9 @@ public class Resource<T extends Model> {
 
             Model bean = JPA.edit(model, (Map) record);
 
-            // if user, update password
+            // Handle restricted field enforcement for non-admins on User
             if (bean instanceof User user) {
-              changeUserPassword(user, (Map) record);
+              handleUserSave(user, (Map) record);
             }
 
             bean = JPA.manage(bean);
@@ -1353,6 +1457,14 @@ public class Resource<T extends Model> {
   private void checkRelationalPermissions(
       Map<String, Object> recordMap, Class<? extends Model> target) {
     final Long valueId = findId(recordMap);
+    AccessType accessType =
+        valueId == null || valueId <= 0L ? JpaSecurity.CAN_READ : JpaSecurity.CAN_WRITE;
+
+    if (MFA.class.isAssignableFrom(target) || UserToken.class.isAssignableFrom(target)) {
+      final AuthSecurityException cause = new AuthSecurityException(accessType, target);
+      throw new UnauthorizedException(cause.getMessage(), cause);
+    }
+
     if (valueId == null || valueId <= 0L) {
       getSecurityWarner().check(JpaSecurity.CAN_CREATE, target);
     } else if (recordMap.containsKey("version")) {
@@ -1394,6 +1506,16 @@ public class Resource<T extends Model> {
         throw new UnauthorizedException(cause.getMessage(), cause);
       }
     }
+
+    if (User.class.isAssignableFrom(model)) {
+      handleUserMassUpdate(values);
+    }
+
+    if (MFA.class.isAssignableFrom(model) || UserToken.class.isAssignableFrom(model)) {
+      final AuthSecurityException cause = new AuthSecurityException(AccessType.WRITE, model);
+      throw new UnauthorizedException(cause.getMessage(), cause);
+    }
+
     final int total = JPA.callInTransaction(() -> query.update(values, AuthUtils.getUser()));
     response.setTotal(total);
 
@@ -1410,6 +1532,7 @@ public class Resource<T extends Model> {
   public Response remove(long id, Request request) {
 
     security.get().check(JpaSecurity.CAN_REMOVE, model, id);
+    checkSpecialModel(model, new Long[] {id}, AccessType.REMOVE);
     final Response response = new Response();
     final Repository repository = JpaRepository.of(model);
     final Map<String, Object> data = new HashMap<>();
@@ -1475,6 +1598,9 @@ public class Resource<T extends Model> {
             if (bean == null || (version != null && !Objects.equals(version, bean.getVersion()))) {
               throw new OptimisticLockException(new StaleObjectStateException(model.getName(), id));
             }
+
+            checkSpecialAllow(bean, JpaSecurity.CAN_REMOVE);
+
             entities.add(bean);
           }
 
@@ -1511,6 +1637,11 @@ public class Resource<T extends Model> {
   @SuppressWarnings("all")
   public Response copy(long id) {
     security.get().check(JpaSecurity.CAN_CREATE, model, id);
+
+    if (MFA.class.isAssignableFrom(model) || UserToken.class.isAssignableFrom(model)) {
+      final AuthSecurityException cause = new AuthSecurityException(AccessType.WRITE, model);
+      throw new UnauthorizedException(cause.getMessage(), cause);
+    }
 
     final Request request = newRequest(null, id);
     final Response response = new Response();
@@ -1575,6 +1706,11 @@ public class Resource<T extends Model> {
    * @return response with the updated values with record name
    */
   public Response getRecordName(Request request) {
+
+    if (MFA.class.isAssignableFrom(model) || UserToken.class.isAssignableFrom(model)) {
+      final AuthSecurityException cause = new AuthSecurityException(AccessType.READ, model);
+      throw new UnauthorizedException(cause.getMessage(), cause);
+    }
 
     Response response = new Response();
 
@@ -1703,6 +1839,13 @@ public class Resource<T extends Model> {
         final Class<? extends Model> modelClass = EntityHelper.getEntityClass(modelValue);
         try {
           getSecurityWarner().check(JpaSecurity.CAN_READ, modelClass, modelValue.getId());
+
+          if (MFA.class.isAssignableFrom(modelClass)
+              || UserToken.class.isAssignableFrom(modelClass)) {
+            final AuthSecurityException cause =
+                new AuthSecurityException(AccessType.READ, modelClass);
+            throw new UnauthorizedException(cause.getMessage(), cause);
+          }
         } catch (UnauthorizedException e) {
           notPermitted.accept(name);
           permittedName = nameParts.subList(0, i + 1).stream().collect(Collectors.joining("."));
@@ -1875,5 +2018,50 @@ public class Resource<T extends Model> {
       }
     }
     return map;
+  }
+
+  private void checkSpecialModel(Class<T> modelToCheck, Long[] ids, AccessType accessType) {
+    if (!(MFA.class.isAssignableFrom(modelToCheck)
+        || UserToken.class.isAssignableFrom(modelToCheck))) {
+      return;
+    }
+    User currentUser = AuthUtils.getUser();
+    if (currentUser == null || AuthUtils.isAdmin(currentUser)) {
+      return;
+    }
+    if (ids == null || ids.length == 0) {
+      return;
+    }
+
+    Set<Long> idSet = new HashSet<>(Arrays.asList(ids));
+    Filter filter =
+        new JPQLFilter("self.owner.id = ? AND self.id IN (?)", currentUser.getId(), idSet);
+    if (filter.build(modelToCheck).count() == idSet.size()) {
+      return;
+    }
+
+    final AuthSecurityException cause = new AuthSecurityException(accessType, model);
+    throw new UnauthorizedException(cause.getMessage(), cause);
+  }
+
+  private void checkSpecialAllow(Model bean, AccessType accessType) {
+    if (!(bean instanceof MFA || bean instanceof UserToken)) {
+      return;
+    }
+
+    User currentUser = AuthUtils.getUser();
+    if (currentUser == null || AuthUtils.isAdmin(currentUser)) {
+      return;
+    }
+
+    User owner =
+        bean instanceof MFA
+            ? ((MFA) bean).getOwner()
+            : bean instanceof UserToken ? ((UserToken) bean).getOwner() : null;
+
+    if (owner == null || !currentUser.getId().equals(owner.getId())) {
+      final AuthSecurityException cause = new AuthSecurityException(accessType, bean.getClass());
+      throw new UnauthorizedException(cause.getMessage(), cause);
+    }
   }
 }

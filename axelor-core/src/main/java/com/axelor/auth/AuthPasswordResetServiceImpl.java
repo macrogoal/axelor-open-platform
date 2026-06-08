@@ -11,9 +11,7 @@ import com.axelor.auth.db.User;
 import com.axelor.auth.db.repo.PasswordResetTokenRepository;
 import com.axelor.auth.db.repo.UserRepository;
 import com.axelor.common.StringUtils;
-import com.axelor.db.tenants.TenantConfig;
 import com.axelor.db.tenants.TenantModule;
-import com.axelor.db.tenants.TenantResolver;
 import com.axelor.i18n.I18n;
 import com.axelor.mail.MailException;
 import com.axelor.mail.db.MailAddress;
@@ -21,7 +19,6 @@ import com.axelor.mail.db.MailMessage;
 import com.axelor.mail.service.MailService;
 import com.google.inject.Provider;
 import com.google.inject.persist.Transactional;
-import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
@@ -30,7 +27,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
@@ -105,11 +101,6 @@ public class AuthPasswordResetServiceImpl implements AuthPasswordResetService {
     final var resetPasswordToken = getValidToken(token);
     final var user = resetPasswordToken.getUser();
     final var authService = AuthService.getInstance();
-
-    // Check whether new password is the same as current one.
-    if (authService.match(password, user.getPassword())) {
-      throw new IllegalArgumentException(I18n.get("New password must be different."));
-    }
 
     authService.changePassword(user, password);
     user.setForcePasswordChange(false);
@@ -190,7 +181,7 @@ public class AuthPasswordResetServiceImpl implements AuthPasswordResetService {
         user.getCode(),
         getBaseUrl(),
         resetUrl,
-        getMaxAgeHours());
+        getMaxAgeMinutes());
   }
 
   protected String getMessage(String key) {
@@ -210,7 +201,7 @@ public class AuthPasswordResetServiceImpl implements AuthPasswordResetService {
   protected String createResetUrl(User user) {
     final var url =
         new StringBuilder()
-            .append("%s/#/reset-password?token=%s".formatted(getBaseUrl(true), createToken(user)));
+            .append("%s/#/reset-password?token=%s".formatted(getBaseUrl(), createToken(user)));
     final var httpRequest = getHttpRequest();
     final var headerTenantId = httpRequest.getHeader("X-Tenant-ID");
 
@@ -235,7 +226,7 @@ public class AuthPasswordResetServiceImpl implements AuthPasswordResetService {
     }
 
     final var token = UUID.randomUUID().toString();
-    final var expiry = LocalDateTime.now().plusHours(getMaxAgeHours());
+    final var expiry = LocalDateTime.now().plusMinutes(getMaxAgeMinutes());
     final var passwordResetToken = new PasswordResetToken(user, hash(token), expiry);
 
     tokenRepository.get().save(passwordResetToken);
@@ -268,12 +259,15 @@ public class AuthPasswordResetServiceImpl implements AuthPasswordResetService {
   }
 
   /**
-   * Gets the maximum age of a password reset token in hours.
+   * Gets the maximum age of a password reset token in minutes.
    *
-   * @return the maximum age in hours
+   * <p>Defaults to 30 minutes if not configured or if the configured value is negative.
+   *
+   * @return the maximum age in minutes
    */
-  protected static int getMaxAgeHours() {
-    return settings.getInt(AvailableAppSettings.APPLICATION_RESET_PASSWORD_MAX_AGE, 24);
+  protected static int getMaxAgeMinutes() {
+    final var maxAge = settings.getInt(AvailableAppSettings.APPLICATION_RESET_PASSWORD_MAX_AGE, 30);
+    return maxAge > 0 ? maxAge : 30;
   }
 
   /**
@@ -284,52 +278,14 @@ public class AuthPasswordResetServiceImpl implements AuthPasswordResetService {
    *
    * @return the base URL
    */
-  protected String getBaseUrl(boolean trimSlash) {
-    var url =
-        settings.isProduction()
-            ? settings.get(AvailableAppSettings.APPLICATION_BASE_URL)
-            : settings.getBaseURL();
-    final var tenantId = TenantResolver.currentTenantIdentifier();
-
-    if (StringUtils.notBlank(tenantId)
-        && !Objects.equals(tenantId, TenantConfig.DEFAULT_TENANT_ID)) {
-      final var tenantBaseUrl = getTenantBaseUrl(tenantId);
-      if (StringUtils.notBlank(tenantBaseUrl)) {
-        url = tenantBaseUrl;
-      }
-    }
+  protected String getBaseUrl() {
+    var url = settings.getBaseURL();
 
     if (StringUtils.isBlank(url)) {
       throw new IllegalArgumentException("Application base URL is not set");
     }
 
-    if (trimSlash && url != null && url.endsWith("/")) {
-      url = url.substring(0, url.length() - 1);
-    }
-
     return url;
-  }
-
-  protected String getBaseUrl() {
-    return getBaseUrl(false);
-  }
-
-  @Nullable
-  protected String getTenantBaseUrl(String tenantId) {
-    final var hostsKey = "db.%s.hosts".formatted(tenantId);
-    final var hostsValue = settings.get(hostsKey);
-    if (StringUtils.notBlank(hostsValue)) {
-      final var hosts = Arrays.asList(hostsValue.split("\\s*,\\s*"));
-      if (!hosts.isEmpty()) {
-        final var host = hosts.getFirst();
-        if (StringUtils.notBlank(host)) {
-          final var httpRequest = getHttpRequest();
-          return "%s://%s%s".formatted(httpRequest.getScheme(), host, httpRequest.getContextPath());
-        }
-      }
-    }
-
-    return null;
   }
 
   protected HttpServletRequest getHttpRequest() {

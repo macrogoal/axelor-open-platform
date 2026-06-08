@@ -4,6 +4,8 @@
  */
 package com.axelor.db;
 
+import com.axelor.db.json.JsonReferenceCascader;
+import com.axelor.db.json.JsonReferenceUpdater;
 import com.axelor.db.mapper.Mapper;
 import com.axelor.db.mapper.Property;
 import com.axelor.db.mapper.PropertyType;
@@ -14,6 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The JPA implementation of the {@link Repository}.
@@ -24,7 +27,16 @@ public class JpaRepository<T extends Model> implements Repository<T> {
 
   protected Class<T> modelClass;
 
+  private final JsonReferenceCascader jsonManager;
+  private final JsonReferenceUpdater jsonUpdater;
+
+  protected JpaRepository() {
+    this.jsonManager = Beans.get(JsonReferenceCascader.class);
+    this.jsonUpdater = Beans.get(JsonReferenceUpdater.class);
+  }
+
   protected JpaRepository(Class<T> modelClass) {
+    this();
     this.modelClass = modelClass;
   }
 
@@ -69,13 +81,31 @@ public class JpaRepository<T extends Model> implements Repository<T> {
   }
 
   @Override
+  public Optional<T> findById(Long id) {
+    return JPA.findById(modelClass, id);
+  }
+
+  @Override
+  public T getReferenceById(Long id) {
+    return JPA.getReferenceById(modelClass, id);
+  }
+
+  @Override
   public List<T> findByIds(List<Long> ids) {
     return JPA.findByIds(modelClass, ids);
   }
 
   @Override
   public T save(T entity) {
-    return JPA.save(entity);
+    try {
+      T saved = JPA.save(entity);
+      jsonManager.afterSave(saved);
+      jsonUpdater.afterSave(saved);
+      return saved;
+    } finally {
+      // Between-save JSON state cleanup for the current entity
+      jsonManager.clearSaveState(entity);
+    }
   }
 
   /**
@@ -101,6 +131,7 @@ public class JpaRepository<T extends Model> implements Repository<T> {
 
   @Override
   public void remove(T entity) {
+    jsonManager.beforeRemove(entity);
     // detach orphan o2m records
     detachChildren(entity);
     JPA.remove(entity);
