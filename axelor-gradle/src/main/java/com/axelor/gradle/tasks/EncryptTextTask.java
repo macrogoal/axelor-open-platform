@@ -4,9 +4,11 @@
  */
 package com.axelor.gradle.tasks;
 
+import org.gradle.work.DisableCachingByDefault;
 import com.axelor.common.StringUtils;
 import org.gradle.api.tasks.options.Option;
 
+@DisableCachingByDefault
 public class EncryptTextTask extends AbstractEncryptTask {
 
   public static final String TASK_NAME = "encryptText";

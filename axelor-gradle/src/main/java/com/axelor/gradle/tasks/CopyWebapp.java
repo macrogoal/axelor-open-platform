@@ -16,8 +16,13 @@ import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.util.PatternSet;
+import org.gradle.work.DisableCachingByDefault;
+
+@DisableCachingByDefault
 
 public class CopyWebapp extends DefaultTask {
 
@@ -44,6 +49,7 @@ public class CopyWebapp extends DefaultTask {
   }
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   public List<FileTree> getFiles() {
     List<FileTree> files = new ArrayList<>();
 

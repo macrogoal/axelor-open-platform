@@ -956,9 +956,8 @@ public abstract class Property {
       return List.of(
           new JavaAnnotation("jakarta.persistence.Basic")
               .param("fetch", "{0:m}", "jakarta.persistence.FetchType.LAZY"),
-          new JavaAnnotation("org.hibernate.annotations.Type")
-              .param("value", "{0:m}", "com.axelor.db.hibernate.type.JsonType.class"));
-    }
+          new JavaAnnotation("org.hibernate.annotations.JdbcTypeCode")
+              .param("value", "{0:m}", "org.hibernate.type.SqlTypes.JSON"));
 
     if (type == PropertyType.ENUM) {
       return List.of(

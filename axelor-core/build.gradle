@@ -1,6 +1,8 @@
+import com.axelor.gradle.AxelorPlugin
+
 description = 'Axelor\'s core functionalities'
 
-apply plugin: com.axelor.gradle.AxelorPlugin
+apply plugin: AxelorPlugin
 
 axelor {
   title = "Axelor Core"

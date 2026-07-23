@@ -1,20 +1,21 @@
-def libs = ext.libs = [:]
+﻿def libs = ext.libs = [:]
 def versions = ext.libsVersions = [:]
 
 // versions
+versions.zxing = "3.5.4"
 versions.guice = "7.0.0"
 versions.guava = "33.6.0-jre"
-versions.hibernate = "6.6.50.Final"
+versions.hibernate = "6.6.54.Final"
 versions.hibernate_validator = "8.0.3.Final"
 versions.caffeine = "3.2.4"
-versions.redisson = "4.3.1"
+versions.redisson = "4.5.0"
 
 versions.groovy = "4.0.32"
 versions.graal_js = "25.0.3"
 versions.resteasy = "6.2.16.Final"
-versions.jackson = "2.21.4"
-versions.jackson_annotations = "2.21"
-versions.shiro = "2.1.0"
+versions.jackson = "2.22.1"
+versions.jackson_annotations = "2.22"
+versions.shiro = "2.2.0"
 versions.buji_pac4j = "9.1.1"
 versions.jakartaee_pac4j = "8.0.3"
 versions.pac4j = "6.5.1"
@@ -28,9 +29,9 @@ versions.tomcat = "10.1.55"
 
 versions.asm = "9.10.1"
 
-versions.flyway = "11.20.3"
+versions.flyway = "12.10.0"
 
-versions.swagger = "2.2.50"
+versions.swagger = "2.2.52"
 
 // unit testing
 libs.junit_jupiter = "org.junit.jupiter:junit-jupiter:${versions.junit}"
@@ -43,13 +44,13 @@ libs.slf4j_base = [
   libs.slf4j_api,
   "org.slf4j:jul-to-slf4j:${versions.slf4j}",
   "org.slf4j:jcl-over-slf4j:${versions.slf4j}",
-  "org.slf4j:log4j-over-slf4j:${versions.slf4j}"
+  "org.slf4j:log4j-over-slf4j:${versions.slf4j}",
 ]
 
 libs.slf4j_logback = libs.slf4j_base + [
-  "ch.qos.logback:logback-core:1.5.32",
-  "ch.qos.logback:logback-classic:1.5.32",
-  "org.jline:jansi:4.1.0"
+  "ch.qos.logback:logback-core:1.5.38",
+  "ch.qos.logback:logback-classic:1.5.38",
+  "org.jline:jansi:4.1.0",
 ]
 
 // Guava
@@ -64,14 +65,14 @@ def excludeGuava = { name ->
     dependencies.create(name) {
       exclude group: 'com.google.guava', module: 'guava'
     },
-    "com.google.guava:guava:${versions.guava}"
+    "com.google.guava:guava:${versions.guava}",
   ]
 }
 
 // Guice
 libs.guice = [
   excludeGuava("com.google.inject:guice:${versions.guice}"),
-  "jakarta.inject:jakarta.inject-api:2.0.1"
+  "jakarta.inject:jakarta.inject-api:2.0.1",
 ]
 libs.guice_servlet = excludeGuava("com.google.inject.extensions:guice-servlet:${versions.guice}")
 libs.guice_persist = excludeGuava("com.google.inject.extensions:guice-persist:${versions.guice}")
@@ -82,11 +83,11 @@ libs.asm = [
   "org.ow2.asm:asm-commons:${versions.asm}",
   "org.ow2.asm:asm-util:${versions.asm}",
   "org.ow2.asm:asm-tree:${versions.asm}",
-  "org.ow2.asm:asm-analysis:${versions.asm}"
+  "org.ow2.asm:asm-analysis:${versions.asm}",
 ]
 
 // Byte Buddy
-libs.byte_buddy = "net.bytebuddy:byte-buddy:1.18.8"
+libs.byte_buddy = "net.bytebuddy:byte-buddy:1.18.11"
 
 // Graal JS
 libs.graal_js = [
@@ -99,12 +100,12 @@ libs.jakarta_jaxb = "jakarta.xml.bind:jakarta.xml.bind-api:4.0.5"
 libs.jakarta_servlet = "jakarta.servlet:jakarta.servlet-api:6.0.0"
 libs.jakarta_mail = [
   "org.eclipse.angus:jakarta.mail:2.0.5",
-  "org.eclipse.angus:angus-activation:2.0.3"
+  "org.eclipse.angus:angus-activation:2.0.3",
 ]
 libs.greenmail = "com.icegreen:greenmail-junit5:2.1.8"
 libs.websocket_api = [
   "jakarta.websocket:jakarta.websocket-api:2.1.1",
-  "jakarta.websocket:jakarta.websocket-client-api:2.1.1"
+  "jakarta.websocket:jakarta.websocket-client-api:2.1.1",
 ]
 libs.jakarta_annotation = "jakarta.annotation:jakarta.annotation-api:2.1.1"
 
@@ -118,11 +119,11 @@ libs.hibernate = [
   "org.hibernate.orm:hibernate-hikaricp:${versions.hibernate}",
   "org.hibernate.validator:hibernate-validator:${versions.hibernate_validator}",
   "org.hibernate.orm:hibernate-jcache:${versions.hibernate}",
-  "com.zaxxer:HikariCP:7.0.2"
+  "com.zaxxer:HikariCP:7.0.2",
 ]
 
 // Caching libs
-libs.ehcache = "org.ehcache:ehcache:3.11.1"
+libs.ehcache = "org.ehcache:ehcache:3.12.0"
 libs.redisson = [
   "org.redisson:redisson:${versions.redisson}",
   dependencies.create("org.redisson:redisson-hibernate-6:${versions.redisson}") {
@@ -132,21 +133,21 @@ libs.redisson = [
     exclude group: "com.fasterxml.jackson.dataformat", module: "jackson-dataformat-yaml"
   },
   // overrides jackson version used
-  "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson}"
+  "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson}",
 ]
 libs.hazelcast = "com.hazelcast:hazelcast:5.6.0"
 libs.caffeine = [
   "com.github.ben-manes.caffeine:caffeine:${versions.caffeine}",
-  "com.github.ben-manes.caffeine:jcache:${versions.caffeine}"
+  "com.github.ben-manes.caffeine:jcache:${versions.caffeine}",
 ]
 libs.infinispan = [
-  "org.infinispan:infinispan-hibernate-cache-v66:16.1.4",
-  "org.infinispan:infinispan-core:16.1.4",
-  "org.infinispan:infinispan-jcache:16.1.4"
+  "org.infinispan:infinispan-hibernate-cache-v66:16.2.1",
+  "org.infinispan:infinispan-core:16.2.1",
+  "org.infinispan:infinispan-jcache:16.2.1",
 ]
 
 // apache tika
-libs.apache_tika_core = "org.apache.tika:tika-core:3.2.3"
+libs.apache_tika_core = "org.apache.tika:tika-core:3.3.1"
 
 // flyway
 libs.flywaydb = [
@@ -156,7 +157,7 @@ libs.flywaydb = [
   "org.flywaydb:flyway-database-hsqldb:${versions.flyway}",
   "org.flywaydb:flyway-database-postgresql:${versions.flyway}",
   // overrides jackson version used
-  "com.fasterxml.jackson.dataformat:jackson-dataformat-toml:${versions.jackson}"
+  "com.fasterxml.jackson.dataformat:jackson-dataformat-toml:${versions.jackson}",
 ]
 
 // eclipselink
@@ -172,7 +173,7 @@ libs.groovy = [
   "org.apache.groovy:groovy-datetime:${versions.groovy}",
   "org.apache.groovy:groovy-nio:${versions.groovy}",
   "org.apache.groovy:groovy-xml:${versions.groovy}",
-  "org.apache.groovy:groovy-json:${versions.groovy}"
+  "org.apache.groovy:groovy-json:${versions.groovy}",
 ]
 
 def resteasy_module = { name ->
@@ -213,13 +214,18 @@ libs.resteasy_guice = dependencies.create("dev.resteasy.guice:resteasy-guice:1.0
   exclude module: "jandex", group: "org.jboss"
   exclude group: 'com.google.inject', module: 'guice'
 }
-libs.resteasy_client = resteasy_module("resteasy-client")
+libs.resteasy_client = [
+  dependencies.create(resteasy_module("resteasy-client")) {
+    exclude group: "commons-codec", module: "commons-codec"
+  },
+  "commons-codec:commons-codec:1.22.0",
+]
 libs.resteasy_server = [
   dependencies.create("org.jboss.resteasy:resteasy-undertow:${versions.resteasy}") {
     exclude module: "jandex", group: "org.jboss"
   },
   "io.undertow:undertow-core:2.3.24.Final",
-  "io.undertow:undertow-servlet:2.3.24.Final"
+  "io.undertow:undertow-servlet:2.3.24.Final",
 ]
 
 libs.swagger_jaxrs2 = [
@@ -231,7 +237,7 @@ libs.swagger_jaxrs2 = [
     exclude group: "com.fasterxml.jackson.dataformat", module: "jackson-dataformat-yaml"
   },
   // overrides jackson version used
-  "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson}"
+  "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${versions.jackson}",
 ]
 
 // jackson
@@ -243,7 +249,7 @@ libs.jackson_libs = [
   excludeGuava("com.fasterxml.jackson.datatype:jackson-datatype-guava:${versions.jackson}"),
   "com.fasterxml.jackson.module:jackson-module-parameter-names:${versions.jackson}",
   "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${versions.jackson}",
-  "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${versions.jackson}"
+  "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${versions.jackson}",
 ]
 
 // Apache Shiro
@@ -259,7 +265,7 @@ libs.apache_shiro = [
     // we use jakarta classifier
     exclude group: 'org.apache.shiro', module: 'shiro-core'
   },
-  "org.apache.shiro:shiro-jcache:${versions.shiro}"
+  "org.apache.shiro:shiro-jcache:${versions.shiro}",
 ]
 
 libs.buji_pac4j = [
@@ -271,7 +277,7 @@ libs.buji_pac4j = [
   "org.pac4j:jakartaee-pac4j:${versions.jakartaee_pac4j}",
   dependencies.create("org.pac4j:pac4j-jakartaee:${versions.pac4j}") {
     exclude group: 'org.mockito', module: 'mockito-core'
-  }
+  },
 ]
 
 libs.pac4j = libs.buji_pac4j + [
@@ -281,7 +287,7 @@ libs.pac4j = libs.buji_pac4j + [
   dependencies.create("org.pac4j:pac4j-ldap:${versions.pac4j}") {
     exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
   },
-  "org.ldaptive:ldaptive:${versions.ldaptive}"
+  "org.ldaptive:ldaptive:${versions.ldaptive}",
 ]
 
 // UnboundID LDAP SDK (for testing only)
@@ -291,7 +297,8 @@ libs.unboundid_ldapsdk = 'com.unboundid:unboundid-ldapsdk:7.0.4'
 libs.commons_jxpath = "commons-jxpath:commons-jxpath:1.4.0"
 libs.commons_csv = [
   "org.apache.commons:commons-csv:1.14.1",
-  "commons-io:commons-io:2.22.0"
+  "commons-codec:commons-codec:1.22.0",
+  "commons-io:commons-io:2.22.0",
 ]
 
 // BIRT Runtime
@@ -350,7 +357,7 @@ libs.birt_runtime = [
     exclude group: "org.apache.commons", module: "commons-compress"
   },
   // CVE-2025-48924
-  "org.apache.commons:commons-compress:1.28.0"
+  "org.apache.commons:commons-compress:1.28.0",
 ]
 
 // Quartz Scheduler
@@ -361,7 +368,7 @@ libs.quartz = dependencies.create("org.quartz-scheduler:quartz:2.5.2") {
 // xstream
 libs.xstream = [
   "com.thoughtworks.xstream:xstream:1.4.21",
-  "com.fasterxml.woodstox:woodstox-core:7.1.1"
+  "com.fasterxml.woodstox:woodstox-core:7.1.1",
 ]
 
 // jsoup for html parsing & sanitize
@@ -377,7 +384,7 @@ libs.tomcat_embed = [
   "org.apache.tomcat.embed:tomcat-embed-core:${versions.tomcat}",
   "org.apache.tomcat.embed:tomcat-embed-jasper:${versions.tomcat}",
   "org.apache.tomcat.embed:tomcat-embed-websocket:${versions.tomcat}",
-  libs.tomcat_jakarta_el
+  libs.tomcat_jakarta_el,
 ]
 
 libs.jasypt = "org.jasypt:jasypt:1.9.3"
@@ -390,9 +397,14 @@ libs.minio = dependencies.create("io.minio:minio:8.6.0") {
   exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
 }
 
-libs.totp = dependencies.create('dev.samstevens.totp:totp:1.7.1') {
-  exclude group: 'com.beust', module: 'jcommander'
-}
+libs.totp = [
+  dependencies.create('dev.samstevens.totp:totp:1.7.1') {
+    exclude group: 'com.beust', module: 'jcommander'
+  },
+  // Source: https://mvnrepository.com/artifact/com.google.zxing/javase
+  "com.google.zxing:javase:${versions.zxing}",
+  "com.google.zxing:core:${versions.zxing}",
+]
 
 libs.zxcvbn4j = "com.nulab-inc:zxcvbn:1.9.0"
 

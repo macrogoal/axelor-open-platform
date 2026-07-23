@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.gradle.work.DisableCachingByDefault;
+
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.gradle.api.DefaultTask;
@@ -20,6 +22,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
+@DisableCachingByDefault
 public abstract class AbstractEncryptTask extends DefaultTask {
 
   public static final String TASK_GROUP = AxelorPlugin.AXELOR_BUILD_GROUP;

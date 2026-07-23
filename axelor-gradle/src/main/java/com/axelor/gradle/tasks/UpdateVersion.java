@@ -4,6 +4,7 @@
  */
 package com.axelor.gradle.tasks;
 
+import org.gradle.work.DisableCachingByDefault;
 import com.axelor.common.VersionUtils;
 import com.axelor.gradle.AxelorPlugin;
 import com.google.common.io.Files;
@@ -18,6 +19,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
+@DisableCachingByDefault
 public class UpdateVersion extends DefaultTask {
 
   public static final String TASK_NAME = "updateVersion";

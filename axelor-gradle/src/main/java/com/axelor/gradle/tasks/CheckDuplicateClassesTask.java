@@ -17,6 +17,8 @@ import java.util.TreeSet;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import org.gradle.api.DefaultTask;
+import org.gradle.work.DisableCachingByDefault;
+
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Classpath;
@@ -25,6 +27,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.VerificationTask;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
 
+@DisableCachingByDefault
 public class CheckDuplicateClassesTask extends DefaultTask implements VerificationTask {
 
   public static final String TASK_NAME = "checkDuplicateClasses";

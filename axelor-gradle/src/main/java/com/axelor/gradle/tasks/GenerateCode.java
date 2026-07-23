@@ -4,6 +4,7 @@
  */
 package com.axelor.gradle.tasks;
 
+import org.gradle.work.DisableCachingByDefault;
 import com.axelor.common.FileUtils;
 import com.axelor.gradle.AxelorExtension;
 import com.axelor.gradle.AxelorPlugin;
@@ -27,6 +28,7 @@ import org.gradle.api.tasks.OutputDirectories;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.util.PatternSet;
 
+@DisableCachingByDefault
 public class GenerateCode extends DefaultTask {
 
   public static final String MAIN_TASK_NAME = "generateCode";

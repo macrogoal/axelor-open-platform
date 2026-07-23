@@ -1,5 +1,11 @@
 import com.axelor.common.VersionUtils
+import com.axelor.gradle.support.ChangelogSupport
+import com.axelor.gradle.support.DuplicatedClassSupport
+import com.axelor.gradle.support.EclipseSupport
+import com.axelor.gradle.support.JavaSupport
+import com.axelor.gradle.support.PublishSupport
 import com.axelor.gradle.task.CentralPortalUploadTask
+import com.axelor.gradle.tasks.UpdateVersion
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -13,7 +19,7 @@ buildscript {
 
 apply plugin: "eclipse"
 apply plugin: "idea"
-apply plugin: com.axelor.gradle.support.ChangelogSupport
+apply plugin: ChangelogSupport
 
 apply from: "version.gradle"
 
@@ -59,10 +65,10 @@ configure(subprojects - project(':axelor-front')) {
   apply from: "${rootDir}/gradle/common.gradle"
   apply from: "${rootDir}/gradle/jacoco.gradle"
 
-  apply plugin: com.axelor.gradle.support.JavaSupport
-  apply plugin: com.axelor.gradle.support.EclipseSupport
-  apply plugin: com.axelor.gradle.support.PublishSupport
-  apply plugin: com.axelor.gradle.support.DuplicatedClassSupport
+  apply plugin: JavaSupport
+  apply plugin: EclipseSupport
+  apply plugin: PublishSupport
+  apply plugin: DuplicatedClassSupport
   apply plugin: 'com.adarshr.test-logger'
   apply plugin: 'signing'
 
@@ -157,8 +163,10 @@ configure(subprojects - project(':axelor-front')) {
     def signingPassword = findProperty("signingPassword")
 
     signing {
-      required = { rootProject.finalRelease }
-      useInMemoryPgpKeys(signingKey, signingPassword)
+      required = { rootProject.finalRelease && signingKey != null }
+      if (signingKey != null) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+      }
       sign publishing.publications
     }
   }
@@ -191,7 +199,7 @@ configure(subprojects - project(':axelor-front')) {
   }
 }
 
-tasks.register("updateVersion", com.axelor.gradle.tasks.UpdateVersion) {
+tasks.register("updateVersion", UpdateVersion) {
   description = "Update version text in source files."
   group = "Axelor"
   processFiles = fileTree(projectDir) {

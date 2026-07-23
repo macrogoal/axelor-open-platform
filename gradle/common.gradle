@@ -18,17 +18,28 @@ dependencies {
   }
 }
 
-configurations.all {
+configurations.configureEach {
   exclude group: 'org.slf4j', module: 'slf4j-log4j12'
   exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
   exclude group: 'commons-logging', module: 'commons-logging'
 
   resolutionStrategy {
     force libs.slf4j_api
+    eachDependency { details ->
+      if (details.requested.group == 'io.netty') {
+        details.useVersion '4.2.15.Final'
+      }
+      if (details.requested.group == 'org.hibernate.orm') {
+        details.useVersion '6.6.52.Final'
+      }
+      if (details.requested.group == 'org.bouncycastle') {
+        details.useVersion '1.84'
+      }
+    }
   }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
   options.encoding = 'UTF-8'
   options.compilerArgs = ['-Xlint:-options']
   options.incremental = true

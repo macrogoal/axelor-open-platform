@@ -4,6 +4,7 @@
  */
 package com.axelor.gradle.tasks;
 
+import org.gradle.work.DisableCachingByDefault;
 import com.axelor.common.StringUtils;
 import com.axelor.gradle.AxelorPlugin;
 import com.axelor.gradle.I18nExtension;
@@ -17,6 +18,7 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
+@DisableCachingByDefault
 public class I18nTask extends DefaultTask {
 
   public static final String TASK_NAME = "i18n";

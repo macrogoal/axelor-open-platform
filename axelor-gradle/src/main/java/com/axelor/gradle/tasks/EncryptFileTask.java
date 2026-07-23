@@ -4,6 +4,7 @@
  */
 package com.axelor.gradle.tasks;
 
+import org.gradle.work.DisableCachingByDefault;
 import com.axelor.common.ObjectUtils;
 import com.axelor.common.StringUtils;
 import com.axelor.tools.encryption.StringEncryption;
@@ -17,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.gradle.api.tasks.options.Option;
 
+@DisableCachingByDefault
 public class EncryptFileTask extends AbstractEncryptTask {
 
   public static final String TASK_NAME = "encryptFile";

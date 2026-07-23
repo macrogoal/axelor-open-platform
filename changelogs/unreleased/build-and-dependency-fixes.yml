@@ -1,0 +1,13 @@
+﻿---
+title: "Build and dependency improvements"
+type: change
+description: |
+  - Upgraded Gradle wrapper to 9.6.1
+  - Added @DisableCachingByDefault annotations to all custom tasks
+  - Migrated from configurations.all to configurations.configureEach for Gradle 8+ API
+  - Fixed AbstractRunTask getMainClass() Property lifecycle to properly use superclass binding
+  - Fixed JSON field mapping: replaced removed @Type(JsonType.class) with @JdbcTypeCode(SqlTypes.JSON) for Hibernate 6 native JSON support
+  - Corrected Redisson dependency order (core before hibernate-6 integration)
+  - Added Netty 4.2.15.Final, Hibernate 6.6.52.Final, BouncyCastle 1.84 version enforcement
+  - Fixed CVE-2025-48924 with explicit commons-compress 1.28.0
+  - Applied consistent 2-space formatting to libs.gradle
