@@ -15,7 +15,6 @@ import com.axelor.db.mapper.Mapper;
 import com.axelor.db.mapper.Property;
 import com.axelor.inject.Beans;
 import com.axelor.meta.MetaScanner;
-import com.axelor.meta.MetaStore;
 import com.axelor.meta.db.MetaAction;
 import com.axelor.meta.db.MetaActionMenu;
 import com.axelor.meta.db.MetaMenu;
@@ -98,11 +97,11 @@ public class ViewLoader extends AbstractParallelLoader {
   private final Map<String, List<Consumer<Group>>> groupsToCreate = new ConcurrentHashMap<>();
 
   @Override
-  protected void doLoad(URL file, Module module, boolean update) {
+  protected void doLoad(URL file, Module module) {
     LOG.debug("Importing: {}", file.getFile());
 
     try {
-      process(file, module, update);
+      process(file, module);
     } catch (IOException | JAXBException e) {
       LOG.error("Error while loading {}", file);
       throw new RuntimeException(e);
@@ -116,7 +115,7 @@ public class ViewLoader extends AbstractParallelLoader {
 
   @Override
   @Transactional
-  protected void doLast(Module module, boolean update) {
+  protected void doLast(Module module) {
     // generate default views
     importDefault(module);
 
@@ -213,34 +212,29 @@ public class ViewLoader extends AbstractParallelLoader {
     return list != null ? list : Collections.emptyList();
   }
 
-  void process(URL url, Module module, boolean update) throws IOException, JAXBException {
+  void process(URL url, Module module) throws IOException, JAXBException {
     final ObjectViews all;
 
     try (InputStream stream = url.openStream()) {
       all = XMLViews.unmarshal(stream);
     }
 
-    getList(all.getViews()).forEach(view -> importView(view, module, update));
+    getList(all.getViews()).forEach(view -> importView(view, module));
 
-    getList(all.getSelections()).forEach(selection -> importSelection(selection, module, update));
+    getList(all.getSelections()).forEach(selection -> importSelection(selection, module));
 
-    getList(all.getActions())
-        .forEach(
-            action -> {
-              importAction(action, module, update);
-              MetaStore.invalidate(action.getName());
-            });
+    getList(all.getActions()).forEach(action -> importAction(action, module));
 
-    getList(all.getMenus()).forEach(item -> importMenu(item, module, update));
+    getList(all.getMenus()).forEach(item -> importMenu(item, module));
 
-    getList(all.getActionMenus()).forEach(item -> importActionMenu(item, module, update));
+    getList(all.getActionMenus()).forEach(item -> importActionMenu(item, module));
   }
 
-  private void importView(AbstractView view, Module module, boolean update) {
-    importView(view, module, update, -1);
+  private void importView(AbstractView view, Module module) {
+    importView(view, module, -1);
   }
 
-  private void importView(AbstractView view, Module module, boolean update, int priority) {
+  private void importView(AbstractView view, Module module, int priority) {
 
     String xmlId = view.getXmlId();
     String name = view.getName();
@@ -324,10 +318,6 @@ public class ViewLoader extends AbstractParallelLoader {
       entity.setPriority(other.getPriority() + 1);
     }
 
-    if (entity.getId() != null && !update) {
-      return;
-    }
-
     if (priority > -1) {
       entity.setPriority(priority);
     }
@@ -368,7 +358,7 @@ public class ViewLoader extends AbstractParallelLoader {
   }
 
   @Transactional
-  protected void importSelection(Selection selection, Module module, boolean update) {
+  protected void importSelection(Selection selection, Module module) {
 
     String name = selection.getName();
     String xmlId = selection.getXmlId();
@@ -401,10 +391,6 @@ public class ViewLoader extends AbstractParallelLoader {
     // set priority higher to existing view
     if (entity.getId() == null && other != null && !Objects.equals(xmlId, other.getXmlId())) {
       entity.setPriority(other.getPriority() + 1);
-    }
-
-    if (entity.getId() != null && !update) {
-      return;
     }
 
     entity.clearItems();
@@ -496,7 +482,7 @@ public class ViewLoader extends AbstractParallelLoader {
   }
 
   @Transactional
-  protected void importAction(Action action, Module module, boolean update) {
+  protected void importAction(Action action, Module module) {
 
     String name = action.getName();
     String xmlId = action.getXmlId();
@@ -529,10 +515,6 @@ public class ViewLoader extends AbstractParallelLoader {
     // set priority higher to existing menu
     if (entity.getId() == null && other != null && !Objects.equals(xmlId, other.getXmlId())) {
       entity.setPriority(other.getPriority() + 1);
-    }
-
-    if (entity.getId() != null && !update) {
-      return;
     }
 
     Class<?> klass = action.getClass();
@@ -583,7 +565,7 @@ public class ViewLoader extends AbstractParallelLoader {
   }
 
   @Transactional
-  protected void importMenu(MenuItem menuItem, Module module, boolean update) {
+  protected void importMenu(MenuItem menuItem, Module module) {
 
     String name = menuItem.getName();
     String xmlId = menuItem.getXmlId();
@@ -616,10 +598,6 @@ public class ViewLoader extends AbstractParallelLoader {
     // set priority higher to existing menu
     if (entity.getId() == null && other != null && !Objects.equals(xmlId, other.getXmlId())) {
       entity.setPriority(other.getPriority() + 1);
-    }
-
-    if (entity.getId() != null && !update) {
-      return;
     }
 
     entity.setTitle(menuItem.getTitle());
@@ -678,7 +656,7 @@ public class ViewLoader extends AbstractParallelLoader {
   }
 
   @Transactional
-  protected void importActionMenu(MenuItem menuItem, Module module, boolean update) {
+  protected void importActionMenu(MenuItem menuItem, Module module) {
     String name = menuItem.getName();
     String xmlId = menuItem.getXmlId();
 
@@ -710,10 +688,6 @@ public class ViewLoader extends AbstractParallelLoader {
     // set priority higher to existing menu
     if (entity.getId() == null && other != null && !Objects.equals(xmlId, other.getXmlId())) {
       entity.setPriority(other.getPriority() + 1);
-    }
-
-    if (entity.getId() != null && !update) {
-      return;
     }
 
     entity.setTitle(menuItem.getTitle());
@@ -794,7 +768,7 @@ public class ViewLoader extends AbstractParallelLoader {
   private String createDefaults(Module module, final Class<?> klass) {
     List<AbstractView> views = createDefaults(klass);
     for (AbstractView view : views) {
-      importView(view, module, false, 10);
+      importView(view, module, 10);
     }
     return XMLViews.toXml(views, false);
   }

@@ -5,7 +5,9 @@
 package com.axelor.i18n;
 
 import com.axelor.cache.AxelorCache;
+import com.axelor.cache.AxelorTopic;
 import com.axelor.cache.CacheBuilder;
+import com.axelor.cache.DistributedFactory;
 import com.axelor.common.StringUtils;
 import com.axelor.db.JPA;
 import jakarta.persistence.EntityManager;
@@ -14,6 +16,7 @@ import jakarta.persistence.TypedQuery;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -21,6 +24,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -35,6 +39,19 @@ public class I18nBundle extends ResourceBundle {
       CacheBuilder.newBuilder("messages").build(I18nBundle::loadMessages);
   private static final AxelorCache<String, String> hashes =
       CacheBuilder.newBuilder("hashes").build(I18nBundle::computeHash);
+
+  /** Local cache in front of the possibly distributed {@link #messages} cache */
+  private static final AxelorCache<String, Map<String, String>> localMessages =
+      CacheBuilder.newInMemoryBuilder()
+          .expireAfterWrite(Duration.ofMinutes(10))
+          .build(messages::get);
+
+  /** Topic used to notify other instances to invalidate their local caches. */
+  private static final AxelorTopic invalidationTopic = DistributedFactory.getTopic("invalidation");
+
+  static {
+    invalidationTopic.addListener(String.class, msg -> invalidateLocal());
+  }
 
   private static final Logger log = LoggerFactory.getLogger(I18nBundle.class);
 
@@ -70,52 +87,56 @@ public class I18nBundle extends ResourceBundle {
   }
 
   private Map<String, String> getMessages() {
-    return messages.get(languageTag);
+    return getMessages(languageTag);
+  }
+
+  private static Map<String, String> getMessages(String languageTag) {
+    return Objects.requireNonNullElse(localMessages.get(languageTag), Collections.emptyMap());
   }
 
   private static Map<String, String> loadMessages(String languageTag) {
-    final EntityManager em;
-
     try {
-      em = JPA.em();
+      final EntityManager em = JPA.em();
+
+      final String language = Locale.forLanguageTag(languageTag).getLanguage();
+      final int limit = 1000;
+      final TypedQuery<String[]> query =
+          em.createQuery(
+                  """
+                  SELECT self.key, MAX(CASE WHEN self.language = :lang THEN self.message ELSE base.message END)
+                  FROM MetaTranslation self
+                  LEFT JOIN MetaTranslation base ON base.key = self.key AND base.language = :baseLang
+                  WHERE self.message IS NOT NULL AND self.language IN (:lang, :baseLang)
+                  GROUP BY self.key
+                  ORDER BY self.key
+                  """,
+                  String[].class)
+              .setParameter("lang", languageTag)
+              .setParameter("baseLang", language)
+              .setFlushMode(FlushModeType.COMMIT)
+              .setMaxResults(limit);
+
+      int offset = 0;
+      List<String[]> results;
+
+      Map<String, String> loadedMessages = new HashMap<>();
+
+      do {
+        query.setFirstResult(offset);
+        results = query.getResultList();
+        for (final String[] result : results) {
+          loadedMessages.put(result[0], result[1]);
+        }
+        offset += limit;
+      } while (results.size() >= limit);
+
+      return loadedMessages;
     } catch (Throwable e) {
-      log.error("Failed to obtain entity manager", e);
-      return Collections.emptyMap();
+      // Can fail if JPA is not yet available or in case of temporarily unavailable database.
+      // Return null to avoid caching the failure, so that it can be retried on the next access.
+      log.error("Failed to load translations for language: {}", languageTag, e);
+      return null;
     }
-
-    final String language = Locale.forLanguageTag(languageTag).getLanguage();
-    final int limit = 1000;
-    final TypedQuery<String[]> query =
-        em.createQuery(
-                """
-                SELECT self.key, MAX(CASE WHEN self.language = :lang THEN self.message ELSE base.message END)
-                FROM MetaTranslation self
-                LEFT JOIN MetaTranslation base ON base.key = self.key AND base.language = :baseLang
-                WHERE self.message IS NOT NULL AND self.language IN (:lang, :baseLang)
-                GROUP BY self.key
-                ORDER BY self.key
-                """,
-                String[].class)
-            .setParameter("lang", languageTag)
-            .setParameter("baseLang", language)
-            .setFlushMode(FlushModeType.COMMIT)
-            .setMaxResults(limit);
-
-    int offset = 0;
-    List<String[]> results;
-
-    Map<String, String> loadedMessages = new HashMap<>();
-
-    do {
-      query.setFirstResult(offset);
-      results = query.getResultList();
-      for (final String[] result : results) {
-        loadedMessages.put(result[0], result[1]);
-      }
-      offset += limit;
-    } while (results.size() >= limit);
-
-    return loadedMessages;
   }
 
   private static String computeHash(String languageTag) {
@@ -126,7 +147,13 @@ public class I18nBundle extends ResourceBundle {
       throw new RuntimeException(e);
     }
 
-    messages.get(languageTag).entrySet().stream()
+    var msgs = getMessages(languageTag);
+
+    if (msgs.isEmpty()) {
+      return null;
+    }
+
+    msgs.entrySet().stream()
         .sorted(Map.Entry.comparingByKey())
         .forEach(
             entry -> {
@@ -144,12 +171,21 @@ public class I18nBundle extends ResourceBundle {
    * @return the messages hash
    */
   public static String getHash(Locale locale) {
-    return hashes.get(locale.toLanguageTag());
+    return Objects.requireNonNullElse(hashes.get(locale.toLanguageTag()), "");
   }
 
   public static void invalidate() {
-    ResourceBundle.clearCache();
     messages.invalidateAll();
     hashes.invalidateAll();
+    invalidateLocal();
+
+    // Notify all instances to invalidate their local caches.
+    invalidationTopic.publish("invalidate");
+  }
+
+  /** Invalidates local caches in response to a translation invalidation. */
+  private static void invalidateLocal() {
+    ResourceBundle.clearCache();
+    localMessages.invalidateAll();
   }
 }

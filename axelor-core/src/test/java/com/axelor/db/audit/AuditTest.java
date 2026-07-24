@@ -18,13 +18,16 @@ import com.axelor.concurrent.ContextAware;
 import com.axelor.db.JPA;
 import com.axelor.db.JpaRepository;
 import com.axelor.db.Query;
+import com.axelor.test.GuiceModules;
 import com.axelor.test.db.AuditCheck;
+import com.axelor.test.db.Contact;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import java.util.List;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
+@GuiceModules(BaseAuditTest.AuditTestModule.class)
 public class AuditTest extends BaseAuditTest {
 
   @Test
@@ -139,5 +142,41 @@ public class AuditTest extends BaseAuditTest {
                 em.clear();
               });
         });
+  }
+
+  /** Test that auditable fields are set on an entity with @DynamicInsert and @DynamicUpdate */
+  @Test
+  @Order(6)
+  void testDynamicUpdate() throws Exception {
+
+    var entity =
+        ContextAware.of()
+            .withTransaction(false)
+            .withUser(AuthUtils.getUser("admin"))
+            .build(() -> createContact("John", "Doe"))
+            .call();
+
+    // Force refetch from database
+    getEntityManager().clear();
+    var finalEntity = getEntityManager().find(Contact.class, entity.getId());
+
+    // check created(On|By) fields are set
+    assertNotNull(finalEntity.getCreatedOn());
+    assertNotNull(finalEntity.getCreatedBy());
+
+    var updatedEntity =
+        ContextAware.of()
+            .withTransaction(false)
+            .withUser(AuthUtils.getUser("admin"))
+            .build(() -> updateContact(finalEntity, "Jane", "Doe"))
+            .call();
+
+    // Force refetch from database
+    getEntityManager().clear();
+    updatedEntity = getEntityManager().find(Contact.class, updatedEntity.getId());
+
+    // check updated(On|By) fields are set
+    assertNotNull(updatedEntity.getUpdatedOn());
+    assertNotNull(updatedEntity.getUpdatedBy());
   }
 }

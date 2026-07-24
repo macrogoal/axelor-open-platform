@@ -7,6 +7,7 @@ package com.axelor.db;
 import com.axelor.app.AppSettings;
 import com.axelor.app.AvailableAppSettings;
 import com.axelor.cache.CacheConfig;
+import com.axelor.cache.redisson.RedissonCacheDefaults;
 import com.axelor.common.StringUtils;
 import com.axelor.db.hibernate.dialect.CustomDialectResolver;
 import com.axelor.db.hibernate.naming.ImplicitNamingStrategyImpl;
@@ -28,6 +29,7 @@ import javax.cache.spi.CachingProvider;
 import org.hibernate.cache.jcache.ConfigSettings;
 import org.hibernate.cache.jcache.internal.JCacheRegionFactory;
 import org.hibernate.cache.spi.RegionFactory;
+import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.CacheSettings;
 import org.hibernate.cfg.Environment;
 import org.hibernate.hikaricp.internal.HikariCPConnectionProvider;
@@ -174,6 +176,8 @@ public class JpaModule extends AbstractModule {
 
     properties.put(CacheSettings.JAKARTA_SHARED_CACHE_MODE, DBHelper.getSharedCacheMode());
     properties.put(CacheSettings.USE_SECOND_LEVEL_CACHE, "true");
+    properties.put(
+        CacheSettings.DEFAULT_CACHE_CONCURRENCY_STRATEGY, AccessType.READ_WRITE.getExternalName());
     properties.put(CacheSettings.USE_QUERY_CACHE, "true");
 
     String cacheRegionFactory = settings.get(AvailableAppSettings.HIBERNATE_CACHE_REGION_FACTORY);
@@ -241,6 +245,7 @@ public class JpaModule extends AbstractModule {
     } else {
       properties.put(CacheSettings.CACHE_REGION_FACTORY, cacheRegionFactory);
       log.info("Cache region factory: {}", cacheRegionFactory);
+      RedissonCacheDefaults.applyHibernateRegionDefaults(cacheRegionFactory, properties);
     }
 
     if (StringUtils.notBlank(cacheRegionPrefix)) {

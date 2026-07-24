@@ -12,8 +12,8 @@ import com.axelor.auth.db.User;
 import com.axelor.db.Query;
 import com.axelor.inject.Beans;
 import com.axelor.meta.db.MetaSequence;
-import com.axelor.test.GuiceModules;
 import com.axelor.test.db.AuditCheck;
+import com.axelor.test.db.Contact;
 import com.google.inject.persist.Transactional;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
@@ -23,12 +23,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@GuiceModules(BaseAuditTest.AuditTestModule.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BaseAuditTest extends JpaTest {
 
   private static final Logger log = LoggerFactory.getLogger(BaseAuditTest.class);
 
+  /**
+   * Base test module that configures audit settings but does not install the {@link AuditModule}.
+   */
   public static class AuditTestModule extends JpaTestModule {
     @Override
     protected void configure() {
@@ -38,6 +40,14 @@ public class BaseAuditTest extends JpaTest {
       AppSettings.get()
           .getInternalProperties()
           .put(AvailableAppSettings.AUDIT_PROCESSOR_ACTIVITY_WINDOW, "0");
+      super.configure();
+    }
+  }
+
+  /** Test module that additionally installs the {@link AuditModule}. */
+  public static class AuditTestModuleWithAudit extends AuditTestModule {
+    @Override
+    protected void configure() {
       super.configure();
       install(new AuditModule());
     }
@@ -108,5 +118,20 @@ public class BaseAuditTest extends JpaTest {
   @Transactional
   protected void deleteUser(User entity) {
     getEntityManager().remove(entity);
+  }
+
+  @Transactional
+  protected Contact createContact(String firstName, String lastName) {
+    var user = new Contact(firstName, lastName);
+    getEntityManager().persist(user);
+    return user;
+  }
+
+  @Transactional
+  protected Contact updateContact(Contact entity, String firstName, String lastName) {
+    entity.setFirstName(firstName);
+    entity.setLastName(lastName);
+    getEntityManager().persist(entity);
+    return entity;
   }
 }

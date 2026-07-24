@@ -44,9 +44,6 @@ public interface AxelorCache<K, V> extends Iterable<Map.Entry<K, V>>, Closeable 
    * Returns the value associated with the {@code key} in this cache, obtaining that value from the
    * {@code mappingFunction} if necessary.
    *
-   * <p>Note that the {@code mappingFunction} is called only if there is no cached value after
-   * calling the cache loader if defined.
-   *
    * @param key the key with which the specified value is to be associated
    * @param mappingFunction the function to compute a value
    * @return the current (existing or computed) value associated with the specified key, or null if
@@ -113,12 +110,17 @@ public interface AxelorCache<K, V> extends Iterable<Map.Entry<K, V>>, Closeable 
    * Returns a view of the entries stored in this cache as a thread-safe map. Modifications made to
    * the map directly affect the cache.
    *
-   * <p>Note that if the cache has a cache loader, it will be used. This differs from Caffeine's
-   * Cache#asMap() and is designed to match Redisson RMap behavior.
-   *
    * <p>In case of tenant-aware cache, the returned map view is for current tenant: you must use
    * this on demand for correct tenant resolution, not on static initialization.
    *
+   * @apiNote Depending on the backing implementation, the returned map is either a wrapping view or
+   *     the underlying cache implementation itself. In the latter case its operations follow the
+   *     <b>native</b> behavior of that implementation and may bypass the configured cache policies.
+   *     In particular, writes through the map (such as {@code put}, {@code putIfAbsent} or {@code
+   *     compute}) may not apply the configured {@code expireAfterWrite} / {@code expireAfterAccess}
+   *     expiry. Prefer the first-class methods of this interface (such as {@link #put(Object,
+   *     Object)} and {@link #get(Object, Function)}) when the configured eviction policies must be
+   *     honored.
    * @return a thread-safe view of this cache supporting {@link ConcurrentMap} operations
    */
   ConcurrentMap<K, V> asMap();

@@ -1,3 +1,321 @@
+## 8.2.2 (2026-06-18)
+
+#### Feature
+
+* Apply default Hibernate second-level cache region settings with Redisson
+
+  <details>
+  
+  When using a Redisson-based Hibernate cache region factory, default cache
+  region settings equivalent to the built-in Caffeine defaults are now applied:
+  max entries and time-to-live for the entity/collection/naturalid and query
+  regions, plus dedicated settings for the frequently-read User, Group, Role,
+  and Permission regions. With the native region factory, only time-to-live
+  settings are applied, as it doesn't support max entries and max idle time.
+  
+  Any `hibernate.cache.redisson.*` settings defined in the application
+  configuration take precedence over these defaults.
+  
+  </details>
+
+* Enable L2 collection cache for auth association collections
+
+  <details>
+  
+  The auth association collections `User.roles`, `User.permissions`, `Group.roles`,
+  `Group.permissions` and `Role.permissions` are now stored in the second-level
+  collection cache (`READ_WRITE`). Their target entities are already cacheable, so
+  reading these collections no longer issues a SQL query against the link table on
+  every load.
+  
+  </details>
+
+* Add distributed publish/subscribe topic
+
+  <details>
+  
+  `DistributedFactory.getTopic(name)` now provides an `AxelorTopic`, a publish/subscribe
+  primitive for broadcasting messages to all application instances. Messages are delivered
+  to every listener, including those registered on the publishing instance.
+  
+  In a distributed setup, messages are broadcast through the cache backend (e.g. Redis when
+  using Redisson); in a single-instance setup they are dispatched in-process. The current
+  tenant is carried with each message and restored before the listener runs.
+  
+  </details>
+
+#### Change
+
+* Use cache loader only for read-through access
+
+  <details>
+  
+  The cache loader used to be forced on `get(key, mappingFunction)` and the
+  `asMap()` view as well, so that loading behaved consistently with the Redisson
+  MapLoader. Now that the Redisson MapLoader is no longer used, that consistency
+  layer is unnecessary and has been removed.
+  
+  The loader is therefore consulted only on read-through access through
+  `get(key)` and `getAll(keys)`. The `get(key, mappingFunction)` method and the
+  `asMap()` view follow standard Caffeine/Redisson semantics and no longer invoke
+  the loader: the mapping function is used as-is and the map view does not trigger
+  loading.
+  
+  </details>
+
+* Upgrade backend dependencies
+
+  <details>
+  
+  Here is the list of backend dependencies upgraded :
+  
+  - Upgrade Logback from 1.5.32 to 1.5.34
+  - Upgrade Jackson from 2.21.3 to 2.21.4
+  - Upgrade ByteBuddy from 1.18.8 to 1.18.10
+  - Upgrade Hibernate from 6.6.50 to 6.6.53
+  - Upgrade Pac4j from 6.5.1 to 6.5.3
+  
+  </details>
+
+* Improve translation lookup performance with distributed cache providers
+
+  <details>
+  
+  Translation lookups no longer fetch the whole translation bundle from the
+  (possibly distributed) cache on every key access. A node-local cache now
+  fronts the shared `messages` cache. This can noticeably speed up translation-heavy paths
+  when using a distributed cache provider.
+  
+  Translation changes are propagated to other nodes immediately through a distributed
+  topic that invalidates their node-local caches, with the local cache TTL (10 minute)
+  acting as a fallback.
+  
+  </details>
+
+#### Fix
+
+* Fix potential connection pool deadlock with Redisson cache loader
+
+  <details>
+  
+  Redisson caches no longer rely on Redisson MapLoader for read-through loading.
+  With MapLoader, the loader runs on Redisson threads while the caller blocks on
+  `RedissonMap.get` → `CompletableFuture.get` without timeout. A loader that
+  accesses the database consumes an extra connection, which could deadlock when
+  the connection pool is exhausted, for example by ParallelTransactionExecutor
+  already consuming all connections.
+  
+  The cache loader is now relying on `RMap.computeIfAbsent`, which executes
+  on the caller thread.
+  
+  </details>
+
+* Set `read-write` as the default second-level cache concurrency strategy
+
+  <details>
+  
+  The default Hibernate second-level cache concurrency strategy is now
+  explicitly set to `read-write` for all cache providers. Entities annotated
+  with `@Cacheable` but without an explicit `@Cache` strategy previously fell
+  back to the strategy reported by the region factory, which differs between
+  providers: Caffeine/JCache defaults to `read-write`, but Redisson defaults to
+  `transactional`.
+  
+  The `transactional` strategy relies on a JTA transaction manager to roll the
+  cache back together with the database. Since the application uses
+  resource-local transactions, a rolled-back update was never undone in the
+  cache, leaving a stale (higher) entity version in Redis. Subsequent updates of
+  the same record then failed with an optimistic-lock error. Forcing
+  `read-write` makes the behavior consistent and correct across all providers.
+  
+  </details>
+
+* Move to perform early
+* Scope distributed locks and atomic longs by tenant
+
+  <details>
+  
+  Distributed locks and atomic longs obtained from `DistributedFactory` are now
+  scoped to the current tenant when multi-tenancy is enabled. The distributed
+  backend (e.g. Redis) is shared across tenants, but the resources these guard
+  (such as module initialization and meta restore) act on per-tenant databases.
+  
+  </details>
+
+* Apply configured expiry to computed values in Redisson caches
+
+  <details>
+  
+  Values populated into a Redisson cache through `get(key, mappingFunction)` —
+  including read-through `get(key)` and `getAll(keys)` loading — were stored
+  without the configured `expireAfterWrite` / `expireAfterAccess`, so those
+  entries never expired. The configured expiry is now applied on these paths
+  for both loading and non-loading Redisson caches.
+  
+  </details>
+
+
+## 8.2.1 (2026-06-10)
+
+#### Feature
+
+* Resolve current user by ID instead of code
+
+  <details>
+  
+  The current user is now resolved by its User ID (primary key) rather than its
+  user code. Fetching by primary key is more efficient, as it can be served directly
+  from the L2 entity cache and avoids the query cache.
+  
+  To support this, the Shiro subject principals now carry the User ID as a second
+  principal, alongside the user code which remains the primary principal. All
+  current-user lookups read this ID and load the user by primary key.
+  
+  Migration: backward compatibility for sessions without a User ID principal has been
+  removed. Any pre-existing user session is rejected and the user must log in again,
+  after which the session carries the required ID principal. This only affects
+  deployments with sessions that persist across server restarts.
+  
+  </details>
+
+#### Fix
+
+* Fix onClick context data for line, area, scatter, radar, funnel, and gauge charts
+
+  <details>
+  
+  Line, area, scatter, radar, funnel, and gauge charts were not passing the
+  clicked record's data to onClick actions, so the action context was always
+  empty. Each chart type now correctly passes the original record as context
+  when clicked, consistent with bar and pie charts. The funnel chart type is
+  also added to the supported chart types documentation.
+  
+  </details>
+
+* Fix reload-dotted view param support in grid view
+
+  <details>
+  
+  Grid view now bypasses the data cache when navigating back from a form view
+  with the reload-dotted action param set, ensuring the grid data is refreshed
+  on the switch from form to grid even when no field has changed.
+  
+  </details>
+
+* Fix silent failure when removing an entity referenced through a bidirectional @OneToOne
+
+  <details>
+  
+  Removing an entity could silently succeed without issuing any `DELETE` SQL when the target entity was on the
+  inverse side of a bidirectional `@OneToOne` whose owning side declared `cascade = {PERSIST, MERGE}`.
+  
+  Two Hibernate behaviors combined to cause the issue :
+  
+  - The inverse `@OneToOne` is eagerly loaded despite `FetchType.LAZY` (Hibernate cannot build a proxy
+    without a foreign-key column), so `EntityManager#find` pulls the owning-side entity into the
+    persistence context.
+  - During flush, the owning-side entity cascades a persist event back onto the deleted target via
+    `cascade = PERSIST`. Per JPA spec, persisting a removed entity returns it to the managed state,
+    so it cancels the deletion before any SQL is emitted.
+  
+  `JpaRepository#remove` now detaches the loaded inverse `@OneToOne` value when its back-reference is
+  required (and therefore cannot be nulled) before delegating to `JPA.remove`, breaking the cascade
+  graph that resurrected the entity. The actual `DELETE` reaches the database, and any foreign-key
+  constraint is enforced normally. When the back-reference is optional, it is nulled as before so the
+  referencing entity is preserved.
+  
+  </details>
+
+* Preserve existing `createdOn`/`createdBy` values on insert
+
+  <details>
+  
+  On insert, `AuditListener` always overwrote the `createdOn` and `createdBy` fields. These fields are now
+  populated only when they are not already set, preserving any values explicitly provided on the entity. This restores 
+  the behavior from before v8, prior to the migration from a Hibernate interceptor to an event listener.
+  
+  </details>
+
+* Fix Caffeine L2 cache expiration configuration
+
+  <details>
+  
+  In `application.conf` Caffeine L2 cache configuration, durations without a unit are interpreted
+  as milliseconds. The intended 1 hour expiration was 3.6 seconds instead.
+  
+  Expiration is now set to 10 minutes: `policy.eager-expiration.after-write = 10m`
+  
+  Removed `default-update-timestamps-region` expiration as per Hibernate recommendation:
+  https://docs.hibernate.org/stable/orm/userguide/html_single/#caching-query-region
+  
+  Added dedicated regions for frequently-read, rarely-changed User/Group/Permission/Role,
+  with access-based expiration (`after-access = 24h`) so actively-used entries stay cached
+  while idle ones are evicted.
+  
+  `Role` is now `cacheable="true"`, consistent with User/Group/Permission.
+  
+  </details>
+
+* Fix `updatedOn`/`updatedBy` audit fields not being filled on update
+
+  <details>
+  
+  The `updatedOn` and `updatedBy` audit fields were not populated when updating records of entities
+  mapped with `@DynamicUpdate`, leaving them empty in the database. They are now correctly filled on
+  every update.
+  
+  </details>
+
+* Allow CLI `database update` to load all modules, not only installed ones
+
+  <details>
+  
+  `database update` (without -m) previously updated only already-installed modules, silently skipping newly added ones. 
+  Now, all modules are loaded regardless of their installation status.
+  
+  </details>
+
+* Fix phone widget paste truncating last digit when country prefix is set
+
+  <details>
+  
+  When a country was pre-filled on a phone field (e.g. France, +33), pasting a
+  national-format number such as 0608691275 caused the last digit to be dropped.
+  The trunk prefix (leading 0) was counted against the country's digit mask, leaving
+  only 9 of the 10 significant digits.
+  
+  Paste events are now intercepted and the pasted text is parsed with libphonenumber-js
+  in the context of the selected country. If a valid number is recognized, it is
+  converted to E.164 format before being handed to the input, bypassing the mask
+  conflict. Pasting a full international number for a different country (e.g.
+  +447700900123 into a French field) also correctly switches the country flag.
+  
+  </details>
+
+* Load data init only on non-installed modules
+
+  <details>
+  
+  `database update` re-imported the `data-init` files of every installed module on each run. Data init (and demo data) 
+  are now loaded only for modules that are not yet installed.
+  
+  </details>
+
+* Fix broken drag and drop in dashboards
+* Fix context passing for dashlet scope
+
+  <details>
+  
+  Form view context should be merged with action-view context of dashlet for domain action, relative view fetching and 
+  search of dashlet. For dashlet actions (such as toolbar/menubar actions), form view context should pass _parent and 
+  action-view context of dashlet will be passed in top level domain context.
+  
+  </details>
+
+#### Security
+
+* Restrict nested references on save
+
 ## 8.2.0 (2026-05-20)
 
 #### Feature

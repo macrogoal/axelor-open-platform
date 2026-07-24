@@ -4,7 +4,7 @@ def versions = ext.libsVersions = [:]
 // versions
 versions.guice = "7.0.0"
 versions.guava = "33.5.0-jre"
-versions.hibernate = "6.6.50.Final"
+versions.hibernate = "6.6.53.Final"
 versions.hibernate_validator = "8.0.3.Final"
 versions.caffeine = "3.2.4"
 versions.redisson = "4.3.1"
@@ -12,12 +12,12 @@ versions.redisson = "4.3.1"
 versions.groovy = "4.0.32"
 versions.graal_js = "25.0.3"
 versions.resteasy = "6.2.16.Final"
-versions.jackson = "2.21.3"
+versions.jackson = "2.21.4"
 versions.jackson_annotations = "2.21"
 versions.shiro = "2.1.0"
 versions.buji_pac4j = "9.1.1"
 versions.jakartaee_pac4j = "8.0.3"
-versions.pac4j = "6.5.1"
+versions.pac4j = "6.5.3"
 versions.ldaptive = "2.5.0"
 
 versions.junit = "6.0.3"
@@ -47,8 +47,8 @@ libs.slf4j_base = [
 ]
 
 libs.slf4j_logback = libs.slf4j_base + [
-  "ch.qos.logback:logback-core:1.5.32",
-  "ch.qos.logback:logback-classic:1.5.32",
+  "ch.qos.logback:logback-core:1.5.34",
+  "ch.qos.logback:logback-classic:1.5.34",
   "org.jline:jansi:4.1.0"
 ]
 
@@ -86,7 +86,7 @@ libs.asm = [
 ]
 
 // Byte Buddy
-libs.byte_buddy = "net.bytebuddy:byte-buddy:1.18.8"
+libs.byte_buddy = "net.bytebuddy:byte-buddy:1.18.10"
 
 // Graal JS
 libs.graal_js = [
